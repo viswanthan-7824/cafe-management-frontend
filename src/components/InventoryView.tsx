@@ -49,7 +49,7 @@ export const InventoryView: React.FC = () => {
       <div className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <Boxes size={22} color="#4f46e5" /> SAEC CAFÉ Inventory & Stock Ledger
+            <Boxes size={22} color="#ea580c" /> SAEC CAFÉ Inventory & Stock Ledger
           </h2>
           <p style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '0.2rem', fontWeight: 500 }}>
             Inventory carries over day-to-day. Changes occur strictly via explicit stock transactions with concurrency locking.

@@ -44,7 +44,7 @@ export const FcfsQueueView: React.FC = () => {
       <div className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <Layers size={22} color="#4f46e5" /> Live FCFS Queue Management Board
+            <Layers size={22} color="#ea580c" /> Live FCFS Queue Management Board
           </h2>
           <p style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '0.2rem', fontWeight: 500 }}>
             Strict First-Come-First-Served sequence based on confirmed_at timestamp for SAEC CAFÉ. Unpaid orders do not enter preparation queue.
@@ -59,7 +59,7 @@ export const FcfsQueueView: React.FC = () => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem' }}>
         {[
           { title: '1. Confirmed Queue', status: 'CONFIRMED', color: '#2563eb', badgeClass: 'badge-blue', icon: Clock },
-          { title: '2. Kitchen Preparation', status: 'PREPARING', color: '#4f46e5', badgeClass: 'badge-indigo', icon: Flame },
+          { title: '2. Kitchen Preparation', status: 'PREPARING', color: '#ea580c', badgeClass: 'badge-orange', icon: Flame },
           { title: '3. Ready at Counter', status: 'READY', color: '#059669', badgeClass: 'badge-emerald', icon: CheckCircle2 },
         ].map((col, idx) => {
           const colOrders = queue.filter(o => o.status === col.status);
@@ -82,7 +82,7 @@ export const FcfsQueueView: React.FC = () => {
                   colOrders.map((order, qIdx) => (
                     <div key={order.id} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '1.25rem', fontWeight: 900, color: '#4f46e5' }}>{order.order_number}</span>
+                        <span style={{ fontSize: '1.25rem', fontWeight: 900, color: '#ea580c' }}>{order.order_number}</span>
                         <span style={{ fontSize: '0.72rem', color: '#64748b', background: '#ffffff', border: '1px solid #cbd5e1', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: 700 }}>
                           FCFS Pos #{qIdx + 1}
                         </span>

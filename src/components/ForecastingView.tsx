@@ -28,7 +28,7 @@ export const ForecastingView: React.FC = () => {
       <div className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <Cpu size={22} color="#4f46e5" /> SAEC CAFÉ AI Demand Forecasting Engine
+            <Cpu size={22} color="#ea580c" /> SAEC CAFÉ AI Demand Forecasting Engine
           </h2>
           <p style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '0.2rem', fontWeight: 500 }}>
             Scikit-Learn Machine Learning heuristic predicting next-day canteen demand based on historical sales trends & day-of-week weights.
@@ -57,7 +57,7 @@ export const ForecastingView: React.FC = () => {
               <tr key={f.product_id}>
                 <td style={{ fontWeight: 800, color: '#1e293b' }}>{f.product_name}</td>
                 <td style={{ color: '#64748b', fontWeight: 600 }}>{f.category}</td>
-                <td style={{ fontWeight: 800, color: '#4f46e5' }}>{f.current_stock} Units</td>
+                <td style={{ fontWeight: 800, color: '#ea580c' }}>{f.current_stock} Units</td>
                 <td style={{ color: '#64748b' }}>{f.total_historical_sold} Sold</td>
                 <td style={{ fontWeight: 900, color: '#1e293b' }}>{f.predicted_demand_next_day} Units</td>
                 <td style={{ fontWeight: 900, color: f.recommended_reorder_qty > 0 ? '#b45309' : '#047857' }}>

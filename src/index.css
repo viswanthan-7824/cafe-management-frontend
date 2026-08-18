@@ -4,18 +4,18 @@
   --font-primary: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-heading: 'Outfit', sans-serif;
 
-  /* Modern Executive Theme Palette (Refined Indigo & Emerald) */
+  /* Modern SAEC Café Theme Palette (Medium Orange & Slate) */
   --bg-dark: #0f172a;
   --bg-canvas: #f8fafc;
   --bg-card: #ffffff;
   --bg-card-hover: #ffffff;
   --bg-input: #f1f5f9;
 
-  --primary: #4f46e5; /* Royal Indigo */
-  --primary-hover: #4338ca;
-  --primary-light: #eef2ff;
-  --primary-border: #c7d2fe;
-  --primary-glow: rgba(79, 70, 229, 0.25);
+  --primary: #ea580c; /* Medium Orange */
+  --primary-hover: #c2410c;
+  --primary-light: #fff7ed;
+  --primary-border: #fed7aa;
+  --primary-glow: rgba(234, 88, 12, 0.25);
 
   --accent-emerald: #10b981;
   --accent-amber: #f59e0b;
@@ -29,7 +29,7 @@
   --text-dim: #94a3b8;  /* Light Slate */
 
   --border: #e2e8f0;
-  --border-active: #4f46e5;
+  --border-active: #ea580c;
 
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -73,7 +73,7 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #4f46e5;
+  background: #ea580c;
 }
 
 /* Premium Card */
@@ -134,10 +134,11 @@ h1, h2, h3, h4, h5, h6 {
   border: 1px solid #bfdbfe;
 }
 
-.badge-indigo {
-  background: #eef2ff;
-  color: #4338ca;
-  border: 1px solid #c7d2fe;
+.badge-indigo,
+.badge-orange {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
 }
 
 /* Buttons */
@@ -156,14 +157,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-primary {
-  background: #4f46e5;
+  background: #ea580c;
   color: #ffffff;
   box-shadow: 0 4px 14px var(--primary-glow);
 }
 .btn-primary:hover {
-  background: #4338ca;
+  background: #c2410c;
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.4);
+  box-shadow: 0 6px 18px rgba(234, 88, 12, 0.4);
 }
 
 .btn-emerald {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Search, Plus, Minus, Trash2, Printer, CheckCircle2, Tag } from 'lucide-react';
-import { api } from '../services/api';
+import { api, getMediaUrl } from '../services/api';
 import type { Product, Category, Order } from '../types';
 
 export const PosView: React.FC = () => {
@@ -18,21 +18,19 @@ export const PosView: React.FC = () => {
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
 
   useEffect(() => {
-    loadData();
+    fetchData();
   }, []);
 
-  async function loadData() {
-    try {
-      const p = await api.getProducts();
-      const c = await api.getCategories();
-      setProducts(p);
-      setCategories(c);
-    } catch (e) {
-      console.error(e);
-    }
-  }
+  const fetchData = async () => {
+    const [pList, cList] = await Promise.all([
+      api.getProducts(),
+      api.getCategories()
+    ]);
+    setProducts(pList);
+    setCategories(cList);
+  };
 
-  const addToCart = (product: Product) => {
+  const handleAddToCart = (product: Product) => {
     if (product.current_stock <= 0) {
       alert(`${product.name} is currently out of stock!`);
       return;
@@ -51,7 +49,7 @@ export const PosView: React.FC = () => {
     }
   };
 
-  const updateQuantity = (productId: number, delta: number) => {
+  const handleUpdateQuantity = (productId: number, delta: number) => {
     setCart(cart.map(item => {
       if (item.product.id === productId) {
         const newQty = item.quantity + delta;
@@ -64,6 +62,9 @@ export const PosView: React.FC = () => {
       return item;
     }).filter(Boolean) as { product: Product; quantity: number }[]);
   };
+
+  const addToCart = handleAddToCart;
+  const updateQuantity = handleUpdateQuantity;
 
   const removeFromCart = (productId: number) => {
     setCart(cart.filter(item => item.product.id !== productId));
@@ -80,7 +81,7 @@ export const PosView: React.FC = () => {
       setCompletedOrder(order);
       setCart([]);
       setDiscount(0);
-      loadData(); // refresh stock numbers
+      fetchData(); // refresh stock numbers
     } catch (e: any) {
       alert(`Checkout failed: ${e.message}`);
     }
@@ -150,7 +151,7 @@ export const PosView: React.FC = () => {
               <div
                 key={product.id}
                 className="glass-card"
-                onClick={() => !isOutOfStock && addToCart(product)}
+                onClick={() => !isOutOfStock && handleAddToCart(product)}
                 style={{
                   padding: '1.1rem',
                   cursor: isOutOfStock ? 'not-allowed' : 'pointer',
@@ -166,7 +167,7 @@ export const PosView: React.FC = () => {
                   <div style={{ position: 'relative', width: '100%', height: '110px', borderRadius: '10px', overflow: 'hidden', backgroundColor: '#f8fafc', marginBottom: '0.65rem', border: '1px solid #e2e8f0' }}>
                     {product.image && (
                       <img
-                        src={product.image.startsWith('http') ? product.image : `http://127.0.0.1:8000${product.image}`}
+                        src={getMediaUrl(product.image)}
                         alt={product.name}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         onError={(e) => {
@@ -196,14 +197,14 @@ export const PosView: React.FC = () => {
                     disabled={isOutOfStock}
                     style={{
                       background: isOutOfStock ? '#e2e8f0' : '#ffffff',
-                      border: isOutOfStock ? '1px solid #cbd5e1' : '1px solid #4f46e5',
-                      color: isOutOfStock ? '#94a3b8' : '#4f46e5',
+                      border: isOutOfStock ? '1px solid #cbd5e1' : '1px solid #ea580c',
+                      color: isOutOfStock ? '#94a3b8' : '#ea580c',
                       fontWeight: 800,
                       fontSize: '0.8rem',
                       padding: '0.35rem 0.85rem',
                       borderRadius: '8px',
                       cursor: isOutOfStock ? 'not-allowed' : 'pointer',
-                      boxShadow: isOutOfStock ? 'none' : '0 2px 8px rgba(79, 70, 229, 0.12)'
+                      boxShadow: isOutOfStock ? 'none' : '0 2px 8px rgba(234, 88, 12, 0.12)'
                     }}
                   >
                     + ADD
@@ -219,9 +220,14 @@ export const PosView: React.FC = () => {
       <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '1.25rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
-              <ShoppingCart size={18} color="#4f46e5" /> Counter Sale Cart
-            </h3>
+            <div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                <ShoppingCart size={18} color="#ea580c" /> Counter Sale Cart
+              </h3>
+              <div style={{ fontSize: '0.7rem', color: '#047857', fontWeight: 700, marginTop: '2px' }}>
+                ⚡ Cashier billing enabled anytime
+              </div>
+            </div>
             <span className="badge badge-indigo">{cart.length} Items</span>
           </div>
 
@@ -236,7 +242,7 @@ export const PosView: React.FC = () => {
                 <div key={item.product.id} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '0.75rem', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <div style={{ fontSize: '0.875rem', fontWeight: 800, color: '#1e293b' }}>{item.product.name}</div>
-                    <div style={{ fontSize: '0.78rem', color: '#4f46e5', fontWeight: 700 }}>₹{item.product.price} × {item.quantity} = ₹{item.product.price * item.quantity}</div>
+                    <div style={{ fontSize: '0.78rem', color: '#ea580c', fontWeight: 700 }}>₹{item.product.price} × {item.quantity} = ₹{item.product.price * item.quantity}</div>
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -276,7 +282,7 @@ export const PosView: React.FC = () => {
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 900, color: '#4f46e5', paddingTop: '0.5rem', borderTop: '1px dashed #e2e8f0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 900, color: '#ea580c', paddingTop: '0.5rem', borderTop: '1px dashed #e2e8f0' }}>
             <span>Grand Total:</span>
             <span>₹{total}</span>
           </div>
@@ -302,7 +308,7 @@ export const PosView: React.FC = () => {
             className="btn btn-primary"
             disabled={cart.length === 0}
             onClick={handleCheckout}
-            style={{ width: '100%', padding: '0.85rem', fontSize: '1rem', marginTop: '0.5rem', background: cart.length === 0 ? '#cbd5e1' : '#4f46e5', cursor: cart.length === 0 ? 'not-allowed' : 'pointer' }}
+            style={{ width: '100%', padding: '0.85rem', fontSize: '1rem', marginTop: '0.5rem', background: cart.length === 0 ? '#cbd5e1' : '#ea580c', cursor: cart.length === 0 ? 'not-allowed' : 'pointer' }}
           >
             <CheckCircle2 size={18} /> COMPLETE COUNTER SALE
           </button>
@@ -318,7 +324,7 @@ export const PosView: React.FC = () => {
             </div>
 
             <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#1e293b', margin: 0 }}>SAEC CAFÉ Counter Order</h3>
-            <p style={{ color: '#4f46e5', fontWeight: 900, fontSize: '1.6rem', margin: '0.4rem 0' }}>
+            <p style={{ color: '#ea580c', fontWeight: 900, fontSize: '1.6rem', margin: '0.4rem 0' }}>
               Order #{completedOrder.order_number}
             </p>
             <p style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 500 }}>
@@ -332,7 +338,7 @@ export const PosView: React.FC = () => {
                   <span>₹{item.total_price}</span>
                 </div>
               ))}
-              <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '0.5rem', marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', fontWeight: 900, color: '#4f46e5', fontSize: '1.05rem' }}>
+              <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '0.5rem', marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', fontWeight: 900, color: '#ea580c', fontSize: '1.05rem' }}>
                 <span>Total Paid ({completedOrder.payment_status}):</span>
                 <span>₹{completedOrder.total_amount}</span>
               </div>

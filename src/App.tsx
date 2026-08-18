@@ -9,7 +9,6 @@ import { ContactOrdersView } from './components/ContactOrdersView';
 import { PaymentSupportView } from './components/PaymentSupportView';
 import { InventoryView } from './components/InventoryView';
 import { ForecastingView } from './components/ForecastingView';
-import { MobileSimulatorView } from './components/MobileSimulatorView';
 import { api, setAuthToken } from './services/api';
 import type { User } from './types';
 import { LogIn, Shield, UserCheck, ShoppingBag, Smartphone, Layers, Lock, AlertCircle, ArrowRight } from 'lucide-react';
@@ -87,12 +86,12 @@ export function App() {
   // If user is logged out, show dedicated Modern Login & Role Selection Portal
   if (!user) {
     const demoRoles = [
-      { name: 'Canteen Admin / Director', email: 'admin@saec.ac.in', pass: 'admin123', role: 'ADMIN', icon: Shield, desc: 'Full Dashboard, Calendar, Inventory & Analytics', color: '#4f46e5', bg: '#eef2ff' },
+      { name: 'Canteen Admin / Director', email: 'admin@saec.ac.in', pass: 'admin123', role: 'ADMIN', icon: Shield, desc: 'Full Dashboard, Calendar, Inventory & Analytics', color: '#ea580c', bg: '#fff7ed' },
       { name: 'Head POS Cashier', email: 'cashier@saec.ac.in', pass: 'cashier123', role: 'CASHIER', icon: ShoppingBag, desc: 'Counter Sales, FCFS Kitchen Queue & Contact Orders', color: '#059669', bg: '#ecfdf5' },
     ];
 
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f172a 0%, #431407 50%, #0f172a 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
         <div style={{ maxWidth: '1050px', width: '100%', background: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 60px rgba(0,0,0,0.3)', overflow: 'hidden', display: 'grid', gridTemplateColumns: '1.2fr 1fr' }}>
           
           {/* Left Column: Quick Role Demo Selection */}
@@ -102,13 +101,13 @@ export function App() {
                 <img
                   src="/saec_cafe_logo.jpg"
                   alt="SAEC CAFÉ Logo"
-                  style={{ width: '56px', height: '56px', borderRadius: '50%', border: '2px solid #4f46e5', boxShadow: '0 4px 14px rgba(79, 70, 229, 0.25)', objectFit: 'cover' }}
+                  style={{ width: '56px', height: '56px', borderRadius: '50%', border: '2px solid #ea580c', boxShadow: '0 4px 14px rgba(234, 88, 12, 0.25)', objectFit: 'cover' }}
                 />
                 <div>
                   <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#1e293b', margin: 0 }}>
-                    SAEC <span style={{ color: '#4f46e5' }}>CAFÉ</span>
+                    SAEC <span style={{ color: '#ea580c' }}>CAFÉ</span>
                   </h2>
-                  <p style={{ fontSize: '0.75rem', color: '#4f46e5', fontWeight: 800, margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <p style={{ fontSize: '0.75rem', color: '#ea580c', fontWeight: 800, margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Good Food, Less Waiting.
                   </p>
                 </div>
@@ -258,7 +257,7 @@ export function App() {
 
             <div style={{ marginTop: '2rem', padding: '1rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '0.78rem', color: '#64748b' }}>
               <div style={{ fontWeight: 800, color: '#1e293b', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                <Lock size={14} color="#4f46e5" /> Security & Role Information
+                <Lock size={14} color="#ea580c" /> Security & Role Information
               </div>
               Role-Based Access Control (RBAC) securely restricts admin, cashier POS, and student functions.
             </div>
@@ -274,7 +273,7 @@ export function App() {
       case 'ADMIN':
         return true;
       case 'CASHIER':
-        return ['pos', 'fcfs', 'contact', 'mobile-app'].includes(tab);
+        return ['pos', 'fcfs', 'contact'].includes(tab);
       default:
         return false;
     }
@@ -304,7 +303,6 @@ export function App() {
           {safeTab === 'payment-support' && <PaymentSupportView />}
           {safeTab === 'inventory' && <InventoryView />}
           {safeTab === 'forecasting' && <ForecastingView />}
-          {safeTab === 'mobile-app' && <MobileSimulatorView />}
         </main>
       </div>
     </div>

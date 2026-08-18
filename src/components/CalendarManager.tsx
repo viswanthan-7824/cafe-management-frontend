@@ -65,7 +65,7 @@ export const CalendarManager: React.FC = () => {
       <div className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <CalendarIcon size={22} color="#4f46e5" /> SAEC CAFÉ Calendar & Operating Hours
+            <CalendarIcon size={22} color="#ea580c" /> SAEC CAFÉ Calendar & Operating Hours
           </h2>
           <p style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '0.2rem', fontWeight: 500 }}>
             Admin controls working days. Default hours: 10:00 AM – 3:30 PM. Unscheduled days default to ORDERING CLOSED.
@@ -87,7 +87,7 @@ export const CalendarManager: React.FC = () => {
         ].map((item, idx) => (
           <div key={idx} className="glass-card" style={{ padding: '1.1rem', textAlign: 'center' }}>
             <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700 }}>{item.label}</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#4f46e5', marginTop: '0.25rem' }}>{item.count}</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#ea580c', marginTop: '0.25rem' }}>{item.count}</div>
           </div>
         ))}
       </div>
@@ -167,7 +167,7 @@ export const CalendarManager: React.FC = () => {
                 <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.35rem', fontWeight: 700 }}>
                   Selected Dates ({selectedDates.length}):
                 </label>
-                <div style={{ fontSize: '0.85rem', color: '#4f46e5', fontWeight: 700 }}>
+                <div style={{ fontSize: '0.85rem', color: '#ea580c', fontWeight: 700 }}>
                   {selectedDates.length > 0 ? selectedDates.join(', ') : 'No dates checked in list. Tick checkboxes in table first.'}
                 </div>
               </div>

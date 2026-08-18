@@ -68,7 +68,7 @@ export const PaymentSupportView: React.FC = () => {
           <tbody>
             {tickets.map(ticket => (
               <tr key={ticket.id}>
-                <td style={{ fontWeight: 900, color: '#4f46e5' }}>{ticket.ticket_number}</td>
+                <td style={{ fontWeight: 900, color: '#ea580c' }}>{ticket.ticket_number}</td>
                 <td style={{ fontWeight: 800, color: '#1e293b' }}>{ticket.order_number}</td>
                 <td>
                   <div style={{ fontWeight: 800, color: '#1e293b' }}>{ticket.user_name}</div>
@@ -103,7 +103,7 @@ export const PaymentSupportView: React.FC = () => {
             <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '1rem', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '0.65rem', fontSize: '0.85rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: '#64748b' }}>Order Number:</span>
-                <span style={{ fontWeight: 900, color: '#4f46e5' }}>{selectedTicket.order_number}</span>
+                <span style={{ fontWeight: 900, color: '#ea580c' }}>{selectedTicket.order_number}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: '#64748b' }}>Customer Name:</span>
@@ -120,8 +120,8 @@ export const PaymentSupportView: React.FC = () => {
             </div>
 
             {/* Proof Placeholder / Preview */}
-            <div style={{ margin: '1rem 0', background: '#eef2ff', border: '1px dashed #4f46e5', borderRadius: '12px', padding: '1.5rem', textAlign: 'center', color: '#4f46e5' }}>
-              <ImageIcon size={32} color="#4f46e5" style={{ marginBottom: '0.5rem' }} />
+            <div style={{ margin: '1rem 0', background: '#fff7ed', border: '1px dashed #ea580c', borderRadius: '12px', padding: '1.5rem', textAlign: 'center', color: '#ea580c' }}>
+              <ImageIcon size={32} color="#ea580c" style={{ marginBottom: '0.5rem' }} />
               <div style={{ fontSize: '0.85rem', fontWeight: 800 }}>UPI Screenshot Evidence Provided</div>
               <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Transaction ID matched with bank statement</div>
             </div>

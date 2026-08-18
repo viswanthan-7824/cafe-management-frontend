@@ -22,29 +22,29 @@ export const DashboardView: React.FC = () => {
 
   const stats = [
     { title: "Today's Revenue", value: `₹${overview?.today_sales?.toLocaleString() || '18,450'}`, sub: "Updated real-time", icon: IndianRupee, color: "#10b981", bg: "#ecfdf5" },
-    { title: "Orders Placed Today", value: overview?.today_orders || 142, sub: "Mobile & POS counter", icon: ShoppingBag, color: "#4f46e5", bg: "#eef2ff" },
+    { title: "Orders Placed Today", value: overview?.today_orders || 142, sub: "Mobile & POS counter", icon: ShoppingBag, color: "#ea580c", bg: "#fff7ed" },
     { title: "Low Stock Alert", value: overview?.low_stock_count || 3, sub: "Requires restock", icon: AlertTriangle, color: "#f59e0b", bg: "#fffbeb" },
     { title: "Payment Issues", value: overview?.pending_support_tickets || 1, sub: "Awaiting admin verification", icon: ShieldAlert, color: "#ef4444", bg: "#fef2f2" },
   ];
 
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-      {/* Header Banner - Sleek Deep Navy/Indigo Gradient */}
+      {/* Header Banner - Medium Warm Orange Gradient */}
       <div className="glass-card" style={{
-        background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%)',
+        background: 'linear-gradient(135deg, #9a3412 0%, #c2410c 45%, #ea580c 100%)',
         border: 'none',
         color: '#ffffff',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        boxShadow: '0 10px 25px rgba(49, 46, 129, 0.25)',
+        boxShadow: '0 10px 25px rgba(234, 88, 12, 0.25)',
         padding: '2rem'
       }}>
         <div>
           <h2 style={{ fontSize: '1.65rem', fontWeight: 900, color: '#ffffff', margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem', letterSpacing: '-0.01em' }}>
             SAEC CAFÉ Management Dashboard <span style={{ fontSize: '1.4rem' }}>🍵 🥐 ☕</span>
           </h2>
-          <p style={{ color: '#e0e7ff', fontSize: '0.92rem', marginTop: '0.4rem', fontWeight: 500 }}>
+          <p style={{ color: '#ffedd5', fontSize: '0.92rem', marginTop: '0.4rem', fontWeight: 500 }}>
             Syed Ammal Engineering College • Real-time Food Ordering, POS Counter & FCFS Queue Engine
           </p>
         </div>
@@ -81,11 +81,11 @@ export const DashboardView: React.FC = () => {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
         <div className="glass-card">
           <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Users size={18} color="#4f46e5" /> Sales Breakdown by User Role
+            <Users size={18} color="#ea580c" /> Sales Breakdown by User Role
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
             {[
-              { role: 'Student Orders', count: '108 orders', percent: '68%', color: '#4f46e5' },
+              { role: 'Student Orders', count: '108 orders', percent: '68%', color: '#ea580c' },
               { role: 'Faculty / Staff Orders', count: '28 orders', percent: '20%', color: '#10b981' },
               { role: 'Walk-in POS Counter', count: '20 orders', percent: '12%', color: '#06b6d4' }
             ].map((item, idx) => (

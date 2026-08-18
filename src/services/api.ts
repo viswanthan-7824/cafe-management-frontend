@@ -10,7 +10,16 @@ import type {
   User
 } from '../types';
 
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
+const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined) || 'http://127.0.0.1:8000/api';
+export const API_BASE_URL = rawBaseUrl.endsWith('/api') ? rawBaseUrl : `${rawBaseUrl.replace(/\/$/, '')}/api`;
+export const BACKEND_SERVER_URL = API_BASE_URL.replace(/\/api\/?$/, '');
+
+export const getMediaUrl = (path: string | null | undefined): string => {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return `${BACKEND_SERVER_URL}${cleanPath}`;
+};
 
 let token: string | null = localStorage.getItem('token') || null;
 

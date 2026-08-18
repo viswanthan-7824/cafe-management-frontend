@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Smartphone, Clock, Send, MessageSquare, CheckCircle2 } from 'lucide-react';
-import { api } from '../services/api';
+import { api, getMediaUrl } from '../services/api';
 import type { Product, Order } from '../types';
 
 export const MobileSimulatorView: React.FC = () => {
@@ -156,7 +156,7 @@ export const MobileSimulatorView: React.FC = () => {
                       {p.image && (
                         <div style={{ width: '54px', height: '54px', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f8fafc', flexShrink: 0, border: '1px solid #e2e8f0' }}>
                           <img
-                            src={p.image.startsWith('http') ? p.image : `http://127.0.0.1:8000${p.image}`}
+                            src={getMediaUrl(p.image)}
                             alt={p.name}
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             onError={(e) => {

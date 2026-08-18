@@ -7,8 +7,7 @@ import {
   MessageSquareCheck,
   ShieldAlert,
   Boxes,
-  TrendingUp,
-  Smartphone
+  TrendingUp
 } from 'lucide-react';
 
 import type { User } from '../types';
@@ -39,7 +38,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'payment-support', label: 'Payment Support', icon: ShieldAlert, badge: pendingTicketsCount, roles: ['ADMIN'] },
     { id: 'inventory', label: 'Stock & Suppliers', icon: Boxes, roles: ['ADMIN'] },
     { id: 'forecasting', label: 'AI Demand Forecast', icon: TrendingUp, roles: ['ADMIN'] },
-    { id: 'mobile-app', label: 'Mobile App Simulator', icon: Smartphone, highlight: true, roles: ['ADMIN', 'CASHIER'] },
   ].filter(item => item.roles.includes(role));
 
   return (
@@ -71,22 +69,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
               padding: '0.75rem 1rem',
               borderRadius: '10px',
               border: isActive
-                ? '1px solid #c7d2fe'
+                ? '1px solid #fed7aa'
                 : '1px solid transparent',
               background: isActive
-                ? '#eef2ff'
-                : item.highlight
-                ? '#faf5ff'
+                ? '#fff7ed'
                 : 'transparent',
-              color: isActive ? '#4f46e5' : item.highlight ? '#6b21a8' : '#64748b',
-              fontWeight: isActive || item.highlight ? 800 : 600,
+              color: isActive ? '#ea580c' : '#64748b',
+              fontWeight: isActive ? 800 : 600,
               fontSize: '0.875rem',
               cursor: 'pointer',
               transition: 'all 0.2s ease'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <Icon size={18} color={isActive ? '#4f46e5' : item.highlight ? '#6b21a8' : '#64748b'} />
+              <Icon size={18} color={isActive ? '#ea580c' : '#64748b'} />
               <span>{item.label}</span>
             </div>
             {item.badge ? (

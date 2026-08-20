@@ -50,13 +50,33 @@ export const api = {
       const res = await fetch(`${API_BASE_URL}/auth/login/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
-      if (!res.ok) throw new Error('Invalid credentials');
+      if (!res.ok) {
+        let errMessage = 'Invalid credentials';
+        try {
+          const errData = await res.json();
+          if (Array.isArray(errData.detail)) {
+            errMessage = errData.detail.join(', ');
+          } else if (typeof errData.detail === 'string') {
+            errMessage = errData.detail;
+          } else if (errData.error) {
+            errMessage = errData.error;
+          } else if (errData.non_field_errors) {
+            errMessage = Array.isArray(errData.non_field_errors) ? errData.non_field_errors.join(', ') : String(errData.non_field_errors);
+          } else if (errData.email) {
+            errMessage = Array.isArray(errData.email) ? errData.email.join(', ') : String(errData.email);
+          }
+        } catch (_) {}
+        throw new Error(errMessage);
+      }
       const data = await res.json();
       setAuthToken(data.access);
       return { token: data.access, user: data.user };
     } catch (e: any) {
+      if (e.message?.includes('Failed to fetch') || e.name === 'TypeError') {
+        throw new Error(`Cannot connect to backend server at ${API_BASE_URL}. Please ensure the backend is running and reachable.`);
+      }
       throw new Error(e.message || 'Login failed');
     }
   },

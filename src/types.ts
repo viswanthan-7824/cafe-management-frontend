@@ -151,13 +151,121 @@ export interface InventoryTransaction {
   timestamp: string;
 }
 
-export interface DemandForecast {
+export interface CustomerIssue {
+  id: number;
+  order_code: string;
+  category: string;
+  description: string;
+  status: 'PENDING' | 'RESOLVED' | 'REJECTED';
+  admin_response?: string;
+  created_at: string;
+}
+
+export interface SystemSettings {
+  canteen_name: string;
+  college_name: string;
+  motto: string;
+  operating_hours: string;
+  app_ordering_window: string;
+  tax_rate_percent: number;
+  enable_special_orders: boolean;
+  contact_email: string;
+  contact_phone: string;
+  enable_sound_alerts: boolean;
+}
+
+// PostgreSQL Data Analytics Types
+export interface AnalyticsOverview {
+  today_sales: number;
+  today_orders: number;
+  total_revenue: number;
+  total_orders: number;
+  completed_orders: number;
+  pending_orders: number;
+  cancelled_orders: number;
+  average_order_value: number;
+  total_products: number;
+  available_products: number;
+  unavailable_products: number;
+  low_stock_count: number;
+  out_of_stock_count: number;
+  total_users: number;
+  active_users: number;
+  pending_support_tickets: number;
+  customer_breakdown: Array<{
+    customer_type: string;
+    total_sales: number;
+    count: number;
+  }>;
+}
+
+export interface DailyTrendItem {
+  date: string;
+  full_date: string;
+  orders: number;
+  revenue: number;
+}
+
+export interface TopSellingProduct {
   product_id: number;
   product_name: string;
-  category: string;
-  current_stock: number;
-  total_historical_sold: number;
-  predicted_demand_next_day: number;
-  recommended_reorder_qty: number;
-  stock_status: string;
+  category_name: string;
+  quantity_sold: number;
+  revenue: number;
+}
+
+export interface CategoryPerformanceItem {
+  category_name: string;
+  quantity_sold: number;
+  revenue: number;
+  orders_count: number;
+  percentage: number;
+}
+
+export interface PaymentMethodDistributionItem {
+  method: string;
+  orders_count: number;
+  revenue: number;
+  percentage: number;
+}
+
+export interface OrderStatusDistributionItem {
+  status: string;
+  count: number;
+  percentage: number;
+}
+
+export interface PeakHourItem {
+  hour: number;
+  label: string;
+  orders: number;
+  revenue: number;
+}
+
+export interface AnalyticsDashboardData {
+  date_range: {
+    range_type: string;
+    start_date: string;
+    end_date: string;
+  };
+  summary: {
+    total_revenue: number;
+    total_orders: number;
+    paid_orders: number;
+    average_order_value: number;
+    completed_orders: number;
+    pending_orders: number;
+    cancelled_orders: number;
+  };
+  daily_trends: DailyTrendItem[];
+  top_selling_products: TopSellingProduct[];
+  category_performance: CategoryPerformanceItem[];
+  payment_methods: PaymentMethodDistributionItem[];
+  order_statuses: OrderStatusDistributionItem[];
+  peak_hours: PeakHourItem[];
+  customer_breakdown: Array<{
+    customer_type: string;
+    total_sales: number;
+    count: number;
+  }>;
 }

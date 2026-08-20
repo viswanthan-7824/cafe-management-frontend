@@ -2,12 +2,13 @@ import type {
   BusinessDay,
   Category,
   ContactOrderRequest,
-  DemandForecast,
   InventoryTransaction,
   Order,
   PaymentSupportTicket,
   Product,
-  User
+  User,
+  AnalyticsOverview,
+  AnalyticsDashboardData
 } from '../types';
 
 const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined) || 'http://127.0.0.1:8000/api';
@@ -245,18 +246,21 @@ export const api = {
     return await res.json();
   },
 
-  async getDemandForecast(): Promise<DemandForecast[]> {
+  async getAnalyticsDashboard(range = '7days', startDate?: string, endDate?: string): Promise<AnalyticsDashboardData | null> {
     try {
-      const res = await fetch(`${API_BASE_URL}/forecasting/predict/`, { headers: authHeaders() });
-      if (!res.ok) return [];
-      const data = await res.json();
-      return data.forecast || [];
+      const params = new URLSearchParams();
+      params.append('range', range);
+      if (startDate) params.append('start_date', startDate);
+      if (endDate) params.append('end_date', endDate);
+      const res = await fetch(`${API_BASE_URL}/analytics/dashboard/?${params.toString()}`, { headers: authHeaders() });
+      if (!res.ok) return null;
+      return await res.json();
     } catch (e) {
-      return [];
+      return null;
     }
   },
 
-  async getOverviewAnalytics() {
+  async getOverviewAnalytics(): Promise<AnalyticsOverview | null> {
     try {
       const res = await fetch(`${API_BASE_URL}/analytics/overview/`, { headers: authHeaders() });
       if (!res.ok) return null;
@@ -305,5 +309,122 @@ export const api = {
     });
     if (!res.ok) throw new Error('Failed to update issue status');
     return await res.json();
+  },
+
+  async getUsers(role?: string, search?: string): Promise<User[]> {
+    try {
+      const params = new URLSearchParams();
+      if (role && role !== 'ALL') params.append('role', role);
+      if (search) params.append('search', search);
+      const url = `${API_BASE_URL}/auth/users/${params.toString() ? `?${params.toString()}` : ''}`;
+      const res = await fetch(url, { headers: authHeaders() });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data) ? data : data.results || [];
+    } catch (e) {
+      return [];
+    }
+  },
+
+  async toggleUserStatus(userId: number): Promise<User> {
+    const res = await fetch(`${API_BASE_URL}/auth/users/${userId}/status/`, {
+      method: 'PATCH',
+      headers: authHeaders()
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to update user active status');
+    }
+    return await res.json();
+  },
+
+  async createCashier(payload: { email: string; full_name: string; mobile_number: string; password: string }): Promise<User> {
+    const res = await fetch(`${API_BASE_URL}/auth/register/cashier/`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || err.email?.[0] || err.mobile_number?.[0] || 'Failed to register cashier');
+    }
+    return await res.json();
+  },
+
+  async createProduct(productData: Partial<Product>): Promise<Product> {
+    const res = await fetch(`${API_BASE_URL}/products/`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(productData)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || err.detail || 'Failed to create food product');
+    }
+    return await res.json();
+  },
+
+  async updateProduct(id: number, productData: Partial<Product>): Promise<Product> {
+    const res = await fetch(`${API_BASE_URL}/products/${id}/`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify(productData)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || err.detail || 'Failed to update food product');
+    }
+    return await res.json();
+  },
+
+  async deleteProduct(id: number): Promise<void> {
+    const res = await fetch(`${API_BASE_URL}/products/${id}/`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to deactivate food product');
+  },
+
+  async searchOrders(query?: string, status?: string, paymentStatus?: string): Promise<Order[]> {
+    try {
+      const params = new URLSearchParams();
+      if (query) params.append('search', query);
+      if (status && status !== 'ALL') params.append('status', status);
+      if (paymentStatus && paymentStatus !== 'ALL') params.append('payment_status', paymentStatus);
+      const url = `${API_BASE_URL}/orders/${params.toString() ? `?${params.toString()}` : ''}`;
+      const res = await fetch(url, { headers: authHeaders() });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data) ? data : data.results || [];
+    } catch (e) {
+      return [];
+    }
+  },
+
+  async getSystemSettings() {
+    try {
+      const saved = localStorage.getItem('saec_system_settings');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      // fallback
+    }
+    return {
+      canteen_name: 'SAEC CAFÉ',
+      college_name: 'Syed Ammal Engineering College',
+      motto: 'Good Food, Less Waiting.',
+      operating_hours: '8:00 AM – 5:00 PM',
+      app_ordering_window: '10:00 AM – 3:30 PM',
+      tax_rate_percent: 0,
+      enable_special_orders: true,
+      contact_email: 'canteen@saec.ac.in',
+      contact_phone: '+91 98765 43210',
+      enable_sound_alerts: true
+    };
+  },
+
+  async updateSystemSettings(settings: any) {
+    localStorage.setItem('saec_system_settings', JSON.stringify(settings));
+    return settings;
   }
 };
+

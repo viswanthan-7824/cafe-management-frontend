@@ -7,7 +7,11 @@ import {
   MessageSquareCheck,
   ShieldAlert,
   Boxes,
-  TrendingUp
+  TrendingUp,
+  UtensilsCrossed,
+  Users,
+  ShoppingBag,
+  Settings
 } from 'lucide-react';
 
 import type { User } from '../types';
@@ -30,15 +34,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const role = user?.role || 'ADMIN';
 
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN'] },
-    { id: 'calendar', label: 'Canteen Calendar', icon: Calendar, roles: ['ADMIN'] },
+    { id: 'dashboard', label: 'Overview Dashboard', icon: LayoutDashboard, roles: ['ADMIN'] },
     { id: 'pos', label: 'Cashier POS Counter', icon: ShoppingCart, roles: ['ADMIN', 'CASHIER'] },
+    { id: 'orders', label: 'Orders & Search', icon: ShoppingBag, roles: ['ADMIN', 'CASHIER'] },
+    { id: 'food', label: 'Food & Availability', icon: UtensilsCrossed, roles: ['ADMIN'] },
+    { id: 'inventory', label: 'Stock & Ledger', icon: Boxes, roles: ['ADMIN'] },
     { id: 'fcfs', label: 'FCFS Queue Board', icon: Layers, roles: ['ADMIN', 'CASHIER'] },
     { id: 'contact', label: 'Contact Orders', icon: MessageSquareCheck, badge: pendingContactCount, roles: ['ADMIN', 'CASHIER'] },
+    { id: 'users', label: 'Users & Cashiers', icon: Users, roles: ['ADMIN'] },
+    { id: 'calendar', label: 'Canteen Calendar', icon: Calendar, roles: ['ADMIN'] },
     { id: 'payment-support', label: 'Payment Support', icon: ShieldAlert, badge: pendingTicketsCount, roles: ['ADMIN'] },
-    { id: 'inventory', label: 'Stock & Suppliers', icon: Boxes, roles: ['ADMIN'] },
-    { id: 'forecasting', label: 'AI Demand Forecast', icon: TrendingUp, roles: ['ADMIN'] },
+    { id: 'analytics', label: 'Analytics & Reports', icon: TrendingUp, roles: ['ADMIN'] },
+    { id: 'settings', label: 'System Settings', icon: Settings, roles: ['ADMIN'] },
   ].filter(item => item.roles.includes(role));
+
 
   return (
     <aside style={{

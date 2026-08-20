@@ -297,3 +297,108 @@ h1, h2, h3, h4, h5, h6 {
 .animate-fade-in {
   animation: fadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
+
+/* ============================================================
+   THERMAL BILL / RECEIPT PRINTING STYLES (58mm & 80mm)
+   ============================================================ */
+.thermal-receipt-container {
+  font-family: 'Courier New', Courier, monospace;
+  color: #000000;
+  background: #ffffff;
+  padding: 12px 8px;
+  line-height: 1.25;
+  margin: 0 auto;
+  border-radius: 4px;
+}
+
+.thermal-receipt-58mm {
+  width: 210px; /* ~58mm physical width at standard DPI */
+  font-size: 11px;
+}
+
+.thermal-receipt-80mm {
+  width: 290px; /* ~80mm physical width at standard DPI */
+  font-size: 12px;
+}
+
+.thermal-header {
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.thermal-title {
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.thermal-subtitle {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.thermal-divider {
+  border-top: 1px dashed #000000;
+  margin: 6px 0;
+}
+
+.thermal-double-divider {
+  border-top: 2px dashed #000000;
+  margin: 6px 0;
+}
+
+.thermal-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 2px 0;
+}
+
+.thermal-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.thermal-table th {
+  text-align: left;
+  font-size: 10px;
+  padding: 2px 0;
+  border-bottom: 1px dashed #000000;
+}
+
+.thermal-table td {
+  padding: 3px 0;
+  vertical-align: top;
+}
+
+.thermal-footer {
+  text-align: center;
+  margin-top: 8px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .thermal-receipt-printable, .thermal-receipt-printable * {
+    visibility: visible;
+  }
+  .thermal-receipt-printable {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  @page {
+    margin: 0;
+    size: auto;
+  }
+}
+

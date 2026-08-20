@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Search, Plus, Minus, Trash2, Printer, CheckCircle2, Tag } from 'lucide-react';
 import { api, getMediaUrl } from '../services/api';
 import type { Product, Category, Order } from '../types';
+import { ThermalReceipt } from './ThermalReceipt';
 
 export const PosView: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -73,8 +74,11 @@ export const PosView: React.FC = () => {
   const subtotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
   const total = Math.max(0, subtotal - discount);
 
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+
   const handleCheckout = async () => {
-    if (cart.length === 0) return;
+    if (cart.length === 0 || isCheckingOut) return;
+    setIsCheckingOut(true);
     try {
       const itemsPayload = cart.map(item => ({ product_id: item.product.id, quantity: item.quantity }));
       const order = await api.createPosOrder(itemsPayload, discount, paymentMethod);
@@ -84,6 +88,8 @@ export const PosView: React.FC = () => {
       fetchData(); // refresh stock numbers
     } catch (e: any) {
       alert(`Checkout failed: ${e.message}`);
+    } finally {
+      setIsCheckingOut(false);
     }
   };
 
@@ -225,7 +231,7 @@ export const PosView: React.FC = () => {
                 <ShoppingCart size={18} color="#ea580c" /> Counter Sale Cart
               </h3>
               <div style={{ fontSize: '0.7rem', color: '#047857', fontWeight: 700, marginTop: '2px' }}>
-                ⚡ Cashier billing enabled anytime
+                ⚡ Cashier billing active
               </div>
             </div>
             <span className="badge badge-indigo">{cart.length} Items</span>
@@ -306,53 +312,24 @@ export const PosView: React.FC = () => {
 
           <button
             className="btn btn-primary"
-            disabled={cart.length === 0}
+            disabled={cart.length === 0 || isCheckingOut}
             onClick={handleCheckout}
-            style={{ width: '100%', padding: '0.85rem', fontSize: '1rem', marginTop: '0.5rem', background: cart.length === 0 ? '#cbd5e1' : '#ea580c', cursor: cart.length === 0 ? 'not-allowed' : 'pointer' }}
+            style={{ width: '100%', padding: '0.85rem', fontSize: '1rem', marginTop: '0.5rem', background: cart.length === 0 || isCheckingOut ? '#cbd5e1' : '#ea580c', cursor: cart.length === 0 || isCheckingOut ? 'not-allowed' : 'pointer' }}
           >
-            <CheckCircle2 size={18} /> COMPLETE COUNTER SALE
+            <CheckCircle2 size={18} /> {isCheckingOut ? 'Processing Order...' : 'COMPLETE COUNTER SALE'}
           </button>
         </div>
       </div>
 
-      {/* Receipt Printing Modal */}
+      {/* Thermal Receipt Printing Modal */}
       {completedOrder && (
-        <div className="modal-overlay">
-          <div className="modal-content animate-fade-in" style={{ maxWidth: '420px', textAlign: 'center' }}>
-            <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem auto' }}>
-              <CheckCircle2 size={32} color="#047857" />
-            </div>
-
-            <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#1e293b', margin: 0 }}>SAEC CAFÉ Counter Order</h3>
-            <p style={{ color: '#ea580c', fontWeight: 900, fontSize: '1.6rem', margin: '0.4rem 0' }}>
-              Order #{completedOrder.order_number}
-            </p>
-            <p style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 500 }}>
-              Customer: {completedOrder.customer_name} ({completedOrder.customer_role})
-            </p>
-
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '1rem', borderRadius: '12px', margin: '1rem 0', textAlign: 'left', fontSize: '0.85rem' }}>
-              {completedOrder.items.map(item => (
-                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem', color: '#1e293b', fontWeight: 600 }}>
-                  <span>{item.product_name} × {item.quantity}</span>
-                  <span>₹{item.total_price}</span>
-                </div>
-              ))}
-              <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '0.5rem', marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', fontWeight: 900, color: '#ea580c', fontSize: '1.05rem' }}>
-                <span>Total Paid ({completedOrder.payment_status}):</span>
-                <span>₹{completedOrder.total_amount}</span>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setCompletedOrder(null)}>Close</button>
-              <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => window.print()}>
-                <Printer size={16} /> Print Receipt
-              </button>
-            </div>
-          </div>
-        </div>
+        <ThermalReceipt
+          order={completedOrder}
+          cashierName="Counter Cashier"
+          onClose={() => setCompletedOrder(null)}
+        />
       )}
     </div>
   );
 };
+

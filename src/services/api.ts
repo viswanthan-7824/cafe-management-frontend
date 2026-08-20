@@ -7,6 +7,7 @@ import type {
   PaymentSupportTicket,
   Product,
   User,
+  UserStats,
   AnalyticsOverview,
   AnalyticsDashboardData
 } from '../types';
@@ -340,10 +341,21 @@ export const api = {
     return await res.json();
   },
 
-  async getUsers(role?: string, search?: string): Promise<User[]> {
+  async getUserStats(): Promise<UserStats> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/users/stats/`, { headers: authHeaders() });
+      if (!res.ok) throw new Error('Failed to fetch user stats');
+      return await res.json();
+    } catch (e) {
+      return { total_users: 0, pending_users: 0, active_users: 0, inactive_users: 0, rejected_users: 0 };
+    }
+  },
+
+  async getUsers(role?: string, status?: string, search?: string): Promise<User[]> {
     try {
       const params = new URLSearchParams();
       if (role && role !== 'ALL') params.append('role', role);
+      if (status && status !== 'ALL') params.append('status', status);
       if (search) params.append('search', search);
       const url = `${API_BASE_URL}/auth/users/${params.toString() ? `?${params.toString()}` : ''}`;
       const res = await fetch(url, { headers: authHeaders() });
@@ -362,7 +374,98 @@ export const api = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Failed to update user active status');
+      throw new Error(err.detail || err.error || 'Failed to update user active status');
+    }
+    return await res.json();
+  },
+
+  async activateUser(userId: number, temporary_password?: string): Promise<{ message: string; temporary_password: string; user: User }> {
+    const res = await fetch(`${API_BASE_URL}/auth/users/${userId}/activate/`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ temporary_password: temporary_password || '' })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to activate user account');
+    }
+    return await res.json();
+  },
+
+  async rejectUser(userId: number, reason?: string): Promise<{ message: string; user: User }> {
+    const res = await fetch(`${API_BASE_URL}/auth/users/${userId}/reject/`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ reason: reason || '' })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to reject user account');
+    }
+    return await res.json();
+  },
+
+  async changePassword(payload: { current_password: string; new_password: string; confirm_password: string }): Promise<{ message: string }> {
+    const res = await fetch(`${API_BASE_URL}/auth/change-password/`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.current_password?.[0] || err.new_password?.[0] || err.confirm_password?.[0] || err.detail || 'Failed to update password');
+    }
+    return await res.json();
+  },
+
+  async requestPasswordReset(email: string): Promise<{ message: string; reset_token?: string }> {
+    const res = await fetch(`${API_BASE_URL}/auth/password-reset/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.trim().toLowerCase() })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to request password reset');
+    }
+    return await res.json();
+  },
+
+  async confirmPasswordReset(payload: { token: string; new_password: string; confirm_password: string }): Promise<{ message: string }> {
+    const res = await fetch(`${API_BASE_URL}/auth/password-reset-confirm/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || err.new_password?.[0] || err.confirm_password?.[0] || 'Failed to reset password');
+    }
+    return await res.json();
+  },
+
+  async registerStudent(payload: { email: string; full_name: string; mobile_number: string; register_number: string; department: string; year: number }): Promise<User> {
+    const res = await fetch(`${API_BASE_URL}/auth/register/student/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.email?.[0] || err.mobile_number?.[0] || err.register_number?.[0] || err.detail || 'Failed to register student');
+    }
+    return await res.json();
+  },
+
+  async registerFaculty(payload: { email: string; full_name: string; mobile_number: string; staff_number: string; department: string }): Promise<User> {
+    const res = await fetch(`${API_BASE_URL}/auth/register/faculty/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.email?.[0] || err.mobile_number?.[0] || err.staff_number?.[0] || err.detail || 'Failed to register faculty');
     }
     return await res.json();
   },

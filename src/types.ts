@@ -1,4 +1,5 @@
 export type UserRole = 'ADMIN' | 'CASHIER' | 'STUDENT' | 'FACULTY';
+export type UserAccountStatus = 'PENDING' | 'ACTIVE' | 'INACTIVE' | 'REJECTED';
 
 export interface User {
   id: number;
@@ -6,10 +7,25 @@ export interface User {
   full_name: string;
   mobile_number: string;
   role: UserRole;
+  status: UserAccountStatus;
+  must_change_password: boolean;
   is_active: boolean;
+  is_demo?: boolean;
   created_at: string;
+  activated_at?: string | null;
+  activated_by?: number | null;
+  activated_by_name?: string | null;
+  rejection_reason?: string;
   student_profile?: { register_number: string; department: string; year: number };
   faculty_profile?: { staff_number: string; department: string };
+}
+
+export interface UserStats {
+  total_users: number;
+  pending_users: number;
+  active_users: number;
+  inactive_users: number;
+  rejected_users: number;
 }
 
 export type FoodType = 'READY_FOOD' | 'MADE_TO_ORDER' | 'CONTACT_ORDER';
@@ -84,6 +100,7 @@ export interface OrderItem {
 export interface Order {
   id: number;
   order_number: string;
+  token_number?: number | string;
   business_day: number;
   user?: number;
   customer_name: string;
@@ -93,6 +110,7 @@ export interface Order {
   order_type: FoodType;
   status: OrderStatus;
   payment_status: PaymentStatus;
+  payment_method?: string;
   pickup_time?: string;
   created_at: string;
   confirmed_at?: string;

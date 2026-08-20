@@ -1,247 +1,215 @@
-import React, { useState } from 'react';
-import { Printer, Eye, X, Check } from 'lucide-react';
+import React from 'react';
 import type { Order } from '../types';
+import { Printer, X } from 'lucide-react';
 
 interface ThermalReceiptProps {
   order: Order;
   cashierName?: string;
-  onClose: () => void;
   isReprint?: boolean;
+  onClose: () => void;
 }
 
 export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
   order,
-  cashierName = 'Canteen Cashier',
-  onClose,
+  cashierName = 'Cashier Counter 1',
   isReprint = false,
+  onClose
 }) => {
-  const [paperWidth, setPaperWidth] = useState<'58mm' | '80mm'>('58mm');
-  const [isPrinting, setIsPrinting] = useState(false);
-  const [printSuccess, setPrintSuccess] = useState(false);
-
-  const orderDate = new Date(order.created_at);
-  const formattedDate = orderDate.toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-  const formattedTime = orderDate.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  });
-
   const handlePrint = () => {
-    setIsPrinting(true);
-    setPrintSuccess(false);
-
-    // Trigger standard browser thermal print workflow
-    setTimeout(() => {
-      window.print();
-      setIsPrinting(false);
-      setPrintSuccess(true);
-    }, 400);
+    window.print();
   };
 
+  const orderDate = new Date(order.created_at || Date.now()).toLocaleString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+
   return (
-    <div className="modal-overlay">
-      <div className="modal-content animate-fade-in" style={{ maxWidth: '480px', padding: '1.5rem', background: '#ffffff' }}>
-        {/* Modal Controls Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
-          <div>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#1e293b', margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Printer size={18} color="#ea580c" /> Thermal Bill Printer
-            </h3>
-            <p style={{ fontSize: '0.75rem', color: '#64748b', margin: 0 }}>
-              {isReprint ? '🔄 Reprinting Existing Order Receipt' : '🧾 Live Counter Order Receipt'}
-            </p>
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        backgroundColor: 'rgba(15, 23, 42, 0.75)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 2000,
+        padding: '1rem'
+      }}
+    >
+      <div
+        style={{
+          background: '#ffffff',
+          borderRadius: '20px',
+          maxWidth: '420px',
+          width: '100%',
+          boxShadow: '0 25px 60px rgba(0,0,0,0.3)',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          maxHeight: '90vh'
+        }}
+      >
+        {/* Modal Action Header (Hidden on Print) */}
+        <div
+          style={{
+            padding: '1rem 1.25rem',
+            borderBottom: '1px solid #e2e8f0',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            background: '#f8fafc'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 800, fontSize: '0.95rem', color: '#1e293b' }}>
+            <Printer size={18} color="#ea580c" />
+            <span>Thermal Bill Preview (58mm/80mm)</span>
           </div>
-          
           <button
             onClick={onClose}
-            style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}
+            style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
           >
             <X size={20} />
           </button>
         </div>
 
-        {/* Paper Size Selector */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', alignSelf: 'center' }}>Roll Width:</span>
-          <button
-            type="button"
-            className={`btn ${paperWidth === '58mm' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ padding: '0.35rem 0.85rem', fontSize: '0.78rem' }}
-            onClick={() => setPaperWidth('58mm')}
-          >
-            58mm Thermal
-          </button>
-          <button
-            type="button"
-            className={`btn ${paperWidth === '80mm' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ padding: '0.35rem 0.85rem', fontSize: '0.78rem' }}
-            onClick={() => setPaperWidth('80mm')}
-          >
-            80mm Thermal
-          </button>
-        </div>
-
-        {/* Live Thermal Receipt Canvas (Printable Area) */}
+        {/* Thermal Print Area */}
         <div
           style={{
-            background: '#f8fafc',
-            border: '1px solid #cbd5e1',
-            borderRadius: '8px',
-            padding: '1rem',
-            display: 'flex',
-            justifyContent: 'center',
-            maxHeight: '380px',
+            padding: '1.5rem',
             overflowY: 'auto',
-            marginBottom: '1rem',
+            background: '#ffffff'
           }}
         >
           <div
-            className={`thermal-receipt-container thermal-receipt-printable ${
-              paperWidth === '58mm' ? 'thermal-receipt-58mm' : 'thermal-receipt-80mm'
-            }`}
+            id="thermal-receipt-print-area"
             style={{
-              boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
-              border: '1px solid #e2e8f0',
+              width: '100%',
+              maxWidth: '300px',
+              margin: '0 auto',
+              padding: '12px 10px',
+              fontFamily: '"Courier New", Courier, monospace',
+              fontSize: '12px',
+              color: '#000000',
+              lineHeight: 1.4,
+              border: '1px dashed #cbd5e1',
+              borderRadius: '8px'
             }}
           >
-            {/* Header */}
-            <div className="thermal-divider" />
-            <div className="thermal-header">
-              <div className="thermal-title">SAEC CAFÉ</div>
-              <div className="thermal-subtitle">FOOD & BEVERAGES</div>
-              <div style={{ fontSize: '9px', color: '#333333' }}>Syed Ammal Engineering College</div>
-              {isReprint && (
-                <div style={{ fontSize: '9px', fontWeight: 900, marginTop: '2px', textDecoration: 'underline' }}>
-                  ** DUPLICATE / REPRINT **
-                </div>
-              )}
-            </div>
-            <div className="thermal-divider" />
-
-            {/* Meta */}
-            <div style={{ margin: '4px 0', fontSize: paperWidth === '58mm' ? '10px' : '11px' }}>
-              <div className="thermal-row">
-                <span>Order No:</span>
-                <span style={{ fontWeight: 900 }}>{order.order_number}</span>
-              </div>
-              <div className="thermal-row">
-                <span>Date:</span>
-                <span>{formattedDate}</span>
-              </div>
-              <div className="thermal-row">
-                <span>Time:</span>
-                <span>{formattedTime}</span>
-              </div>
-              <div className="thermal-row">
-                <span>Cashier:</span>
-                <span>{cashierName}</span>
-              </div>
-              {order.customer_name && (
-                <div className="thermal-row">
-                  <span>Customer:</span>
-                  <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {order.customer_name}
-                  </span>
-                </div>
-              )}
+            {/* Canteen Header */}
+            <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+              <div style={{ fontSize: '16px', fontWeight: 900, letterSpacing: '1px' }}>SAEC CAFÉ</div>
+              <div style={{ fontSize: '10px' }}>Syed Ammal Engineering College</div>
+              <div style={{ fontSize: '10px' }}>Ramanathapuram, Tamil Nadu</div>
+              <div style={{ fontSize: '11px', marginTop: '4px', fontWeight: 'bold' }}>🍵 🥐 ☕ C++ CANTEEN</div>
             </div>
 
-            {/* Table */}
-            <div className="thermal-divider" />
-            <table className="thermal-table">
-              <thead>
-                <tr>
-                  <th style={{ width: '55%' }}>ITEM</th>
-                  <th style={{ width: '18%', textAlign: 'center' }}>QTY</th>
-                  <th style={{ width: '27%', textAlign: 'right' }}>PRICE</th>
-                </tr>
-              </thead>
-              <tbody>
-                {order.items.map((it) => (
-                  <tr key={it.id}>
-                    <td style={{ wordBreak: 'break-word' }}>{it.product_name}</td>
-                    <td style={{ textAlign: 'center' }}>{it.quantity}</td>
-                    <td style={{ textAlign: 'right' }}>₹{Number(it.total_price).toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div style={{ borderBottom: '1px dashed #000000', margin: '6px 0' }} />
 
-            {/* Calculations */}
-            <div className="thermal-divider" />
-            <div className="thermal-row" style={{ fontSize: paperWidth === '58mm' ? '10px' : '11px' }}>
-              <span>Subtotal:</span>
-              <span>₹{Number(order.subtotal || order.total_amount).toFixed(2)}</span>
+            {/* Order Details */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
+              <span>Order No:</span>
+              <span style={{ fontWeight: 'bold' }}>{order.order_number || `CAN-${order.id}`}</span>
             </div>
-            {Number(order.discount_amount) > 0 && (
-              <div className="thermal-row" style={{ fontSize: paperWidth === '58mm' ? '10px' : '11px' }}>
-                <span>Discount:</span>
-                <span>-₹{Number(order.discount_amount).toFixed(2)}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
+              <span>Date/Time:</span>
+              <span>{orderDate}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
+              <span>Customer:</span>
+              <span>{order.customer_name || 'Counter Guest'}</span>
+            </div>
+            {order.token_number && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 'bold', margin: '4px 0' }}>
+                <span>TOKEN NO:</span>
+                <span>#{order.token_number}</span>
               </div>
             )}
-            <div className="thermal-divider" />
-            <div
-              className="thermal-row"
-              style={{ fontWeight: 900, fontSize: paperWidth === '58mm' ? '12px' : '13px' }}
-            >
-              <span>TOTAL:</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
+              <span>Counter:</span>
+              <span>{cashierName}</span>
+            </div>
+
+            <div style={{ borderBottom: '1px dashed #000000', margin: '6px 0' }} />
+
+            {/* Items Table */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '11px', marginBottom: '4px' }}>
+              <span style={{ flex: 2 }}>ITEM</span>
+              <span style={{ width: '35px', textAlign: 'center' }}>QTY</span>
+              <span style={{ width: '45px', textAlign: 'right' }}>PRICE</span>
+              <span style={{ width: '50px', textAlign: 'right' }}>TOTAL</span>
+            </div>
+
+            <div style={{ borderBottom: '1px dotted #000000', marginBottom: '4px' }} />
+
+            {order.items && order.items.map((item, idx) => {
+              const itemTotal = Number(item.unit_price) * item.quantity;
+              return (
+                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '3px' }}>
+                  <span style={{ flex: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {item.product_name || `Item ${idx + 1}`}
+                  </span>
+                  <span style={{ width: '35px', textAlign: 'center' }}>{item.quantity}</span>
+                  <span style={{ width: '45px', textAlign: 'right' }}>₹{Number(item.unit_price).toFixed(0)}</span>
+                  <span style={{ width: '50px', textAlign: 'right', fontWeight: 'bold' }}>₹{itemTotal.toFixed(0)}</span>
+                </div>
+              );
+            })}
+
+            <div style={{ borderBottom: '1px dashed #000000', margin: '6px 0' }} />
+
+            {/* Total Section */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 900 }}>
+              <span>GRAND TOTAL:</span>
               <span>₹{Number(order.total_amount).toFixed(2)}</span>
             </div>
-            <div className="thermal-double-divider" />
 
-            {/* Footer Details */}
-            <div style={{ margin: '4px 0', fontSize: paperWidth === '58mm' ? '10px' : '11px' }}>
-              <div className="thermal-row">
-                <span>Payment:</span>
-                <span style={{ fontWeight: 900 }}>{order.payment_status === 'PAID' ? 'PAID / CASH' : order.payment_status}</span>
-              </div>
-              <div className="thermal-row">
-                <span>Order Status:</span>
-                <span style={{ fontWeight: 900 }}>{order.status}</span>
-              </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginTop: '4px' }}>
+              <span>Payment Mode:</span>
+              <span style={{ fontWeight: 'bold' }}>{order.payment_method || 'CASH'}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
+              <span>Payment Status:</span>
+              <span style={{ fontWeight: 'bold' }}>{order.payment_status || 'PAID'}</span>
             </div>
 
-            <div className="thermal-divider" />
-            <div className="thermal-footer">
-              <div>THANK YOU!</div>
-              <div>VISIT AGAIN</div>
+            <div style={{ borderBottom: '1px dashed #000000', margin: '8px 0' }} />
+
+            {/* Footer */}
+            <div style={{ textAlign: 'center', fontSize: '10px' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>Good Food, Less Waiting.</div>
+              <div>Please collect your food when your token is called.</div>
+              <div style={{ marginTop: '4px' }}>*** THANK YOU! VISIT AGAIN ***</div>
             </div>
-            <div className="thermal-divider" />
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            style={{ flex: 1 }}
-            onClick={onClose}
-          >
+        {/* Print Actions Footer */}
+        <div
+          style={{
+            padding: '1rem 1.25rem',
+            borderTop: '1px solid #e2e8f0',
+            display: 'flex',
+            gap: '0.75rem',
+            background: '#f8fafc'
+          }}
+        >
+          <button onClick={onClose} className="btn btn-secondary" style={{ flex: 1 }}>
             Close
           </button>
           <button
-            type="button"
-            className="btn btn-primary"
-            style={{ flex: 1.5 }}
-            disabled={isPrinting}
             onClick={handlePrint}
+            className="btn btn-primary"
+            style={{ flex: 1, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
           >
-            <Printer size={16} />
-            {isPrinting ? 'Printing Receipt...' : isReprint ? 'Reprint Bill' : 'Print Bill'}
+            <Printer size={18} />
+            Print Receipt
           </button>
         </div>
-
-        {printSuccess && (
-          <div style={{ marginTop: '0.75rem', padding: '0.5rem', background: '#ecfdf5', color: '#047857', borderRadius: '6px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontWeight: 700 }}>
-            <Check size={14} /> Bill dispatched to printer successfully.
-          </div>
-        )}
       </div>
     </div>
   );

@@ -15,11 +15,34 @@ import { InventoryView } from './components/InventoryView';
 import { AnalyticsView } from './components/AnalyticsView';
 import { api, setAuthToken } from './services/api';
 import type { User } from './types';
-import { LogIn, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import {
+  LogIn,
+  Lock,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+  Mail,
+  KeyRound,
+  ArrowLeft,
+  UserPlus,
+  RefreshCw,
+  Clock,
+  ShieldAlert
+} from 'lucide-react';
+
+type AuthViewMode =
+  | 'LOGIN'
+  | 'FORGOT_PASSWORD'
+  | 'RESET_LINK_SENT'
+  | 'RESET_PASSWORD'
+  | 'REGISTER'
+  | 'REGISTRATION_SUCCESS';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [user, setUser] = useState<User | null>(null);
+  const [authView, setAuthView] = useState<AuthViewMode>('LOGIN');
   const [businessStatus, setBusinessStatus] = useState<any>({
     is_ordering_open: true,
     message: '🟢 ORDERING OPEN',
@@ -34,6 +57,33 @@ export function App() {
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Forgot / Reset Password State
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [resetToken, setResetToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [authSuccessMessage, setAuthSuccessMessage] = useState('');
+
+  // First Login / Change Temporary Password State
+  const [currentTempPassword, setCurrentTempPassword] = useState('');
+  const [mandatoryNewPassword, setMandatoryNewPassword] = useState('');
+  const [mandatoryConfirmPassword, setMandatoryConfirmPassword] = useState('');
+  const [showMandatoryPass, setShowMandatoryPass] = useState(false);
+  const [tempPassError, setTempPassError] = useState('');
+
+  // Self-Registration State
+  const [regFullName, setRegFullName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regMobile, setRegMobile] = useState('');
+  const [regRole, setRegRole] = useState<'STUDENT' | 'FACULTY'>('STUDENT');
+  const [regDepartment, setRegDepartment] = useState('Computer Science and Engineering');
+  const [regIdNumber, setRegIdNumber] = useState('');
+  const [regYear, setRegYear] = useState(1);
+
+  // Logout confirmation modal
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     loadStatus();
@@ -55,18 +105,20 @@ export function App() {
       const loginEmail = eEmail || email;
       const loginPass = ePassword || password;
       const { user: u } = await api.login(loginEmail, loginPass);
-      
+
       // Enforce Web Role Gate: Only ADMIN and CASHIER are permitted on Web Portal
       if (u.role !== 'ADMIN' && u.role !== 'CASHIER') {
         setAuthToken(null);
         setUser(null);
-        setLoginError('Access Denied: The Web Management Portal is exclusively for Admin and Cashier staff. Students and Faculty must use the SAEC Cafe Mobile App.');
+        setLoginError(
+          'Access Denied: The Web Management Portal is exclusively for Admin and Cashier staff. Students and Faculty must use the SAEC Cafe Mobile App.'
+        );
         return;
       }
 
       setUser(u);
       setLoginError('');
-      
+
       // Role-based landing page routing
       if (u.role === 'CASHIER') {
         setActiveTab('pos');
@@ -74,7 +126,122 @@ export function App() {
         setActiveTab('dashboard');
       }
     } catch (e: any) {
-      setLoginError(e.message || 'Invalid email or password. Please try again.');
+      setLoginError(e.message || 'Incorrect email or password. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleMandatoryPasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (mandatoryNewPassword !== mandatoryConfirmPassword) {
+      setTempPassError('New passwords do not match.');
+      return;
+    }
+    if (mandatoryNewPassword.length < 6) {
+      setTempPassError('Password must be at least 6 characters.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setTempPassError('');
+    try {
+      await api.changePassword({
+        current_password: currentTempPassword,
+        new_password: mandatoryNewPassword,
+        confirm_password: mandatoryConfirmPassword
+      });
+
+      if (user) {
+        setUser({ ...user, must_change_password: false });
+      }
+      setMandatoryNewPassword('');
+      setMandatoryConfirmPassword('');
+      setCurrentTempPassword('');
+    } catch (err: any) {
+      setTempPassError(err.message || 'Failed to update password. Please verify current password.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail.trim()) return;
+
+    setIsSubmitting(true);
+    setLoginError('');
+    try {
+      const res = await api.requestPasswordReset(forgotEmail.trim());
+      if (res.reset_token) {
+        setResetToken(res.reset_token);
+      }
+      setAuthView('RESET_LINK_SENT');
+    } catch (err: any) {
+      setLoginError(err.message || 'Unable to process password reset request.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      setLoginError('Passwords do not match.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setLoginError('Password must be at least 6 characters.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setLoginError('');
+    try {
+      await api.confirmPasswordReset({
+        token: resetToken.trim(),
+        new_password: newPassword,
+        confirm_password: confirmPassword
+      });
+      setAuthSuccessMessage('Password reset successfully. You can now sign in with your new password.');
+      setAuthView('LOGIN');
+      setPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      setLoginError(err.message || 'Failed to reset password. Token may be invalid or expired.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRegistrationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setLoginError('');
+    try {
+      if (regRole === 'STUDENT') {
+        await api.registerStudent({
+          email: regEmail.trim(),
+          full_name: regFullName.trim(),
+          mobile_number: regMobile.trim(),
+          register_number: regIdNumber.trim(),
+          department: regDepartment,
+          year: Number(regYear)
+        });
+      } else {
+        await api.registerFaculty({
+          email: regEmail.trim(),
+          full_name: regFullName.trim(),
+          mobile_number: regMobile.trim(),
+          staff_number: regIdNumber.trim(),
+          department: regDepartment
+        });
+      }
+
+      setAuthView('REGISTRATION_SUCCESS');
+    } catch (err: any) {
+      setLoginError(err.message || 'Registration failed. Please check your information.');
     } finally {
       setIsSubmitting(false);
     }
@@ -85,117 +252,840 @@ export function App() {
     setUser(null);
     setEmail('');
     setPassword('');
+    setAuthView('LOGIN');
+    setShowLogoutConfirm(false);
     setActiveTab('dashboard');
   };
 
-  // If user is logged out, show dedicated Modern Login Portal
-  if (!user) {
+  // 1. MANDATORY FIRST LOGIN / CHANGE TEMPORARY PASSWORD SCREEN
+  if (user && user.must_change_password) {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f172a 0%, #431407 50%, #0f172a 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-        <div style={{ maxWidth: '480px', width: '100%', background: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 60px rgba(0,0,0,0.3)', overflow: 'hidden', padding: '3rem 2.5rem' }}>
-          
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
-              <img
-                src="/saec_cafe_logo.jpg"
-                alt="SAEC CAFÉ Logo"
-                style={{ width: '64px', height: '64px', borderRadius: '50%', border: '3px solid #ea580c', boxShadow: '0 6px 18px rgba(234, 88, 12, 0.25)', objectFit: 'cover' }}
-              />
+      <div
+        style={{
+          minHeight: '100vh',
+          background: 'linear-gradient(135deg, #0f172a 0%, #431407 50%, #0f172a 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '2rem'
+        }}
+      >
+        <div
+          style={{
+            maxWidth: '480px',
+            width: '100%',
+            background: '#ffffff',
+            borderRadius: '24px',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.3)',
+            padding: '2.75rem 2.25rem'
+          }}
+        >
+          <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+            <div
+              style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '16px',
+                background: '#fff7ed',
+                color: 'var(--primary)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '1rem'
+              }}
+            >
+              <KeyRound size={28} />
             </div>
-            <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#1e293b', margin: 0, letterSpacing: '-0.02em' }}>
-              SAEC <span style={{ color: '#ea580c' }}>CAFÉ</span>
-            </h1>
-            <p style={{ fontSize: '0.8rem', color: '#ea580c', fontWeight: 800, margin: '0.35rem 0 0 0', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              Good Food, Less Waiting.
-            </p>
-            <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.5rem' }}>
-              Management Portal • Sign In
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.4rem' }}>
+              Create Your New Password
+            </h2>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
+              You are currently using an administrator-issued temporary password. Please choose a new, permanent password to secure your account.
             </p>
           </div>
 
-          {loginError && (
-            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.6rem', color: '#b91c1c', fontSize: '0.82rem', marginBottom: '1.25rem', fontWeight: 600 }}>
+          {tempPassError && (
+            <div
+              style={{
+                background: '#fef2f2',
+                border: '1px solid #fecaca',
+                borderRadius: '10px',
+                padding: '0.75rem 1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                color: '#b91c1c',
+                fontSize: '0.82rem',
+                marginBottom: '1.25rem',
+                fontWeight: 600
+              }}
+            >
               <AlertCircle size={18} />
-              <span>{loginError}</span>
+              <span>{tempPassError}</span>
             </div>
           )}
 
-          <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
+          <form onSubmit={handleMandatoryPasswordChange} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
             <div>
-              <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.4rem' }}>
-                Institutional Email Address
+              <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', display: 'block', marginBottom: '0.4rem' }}>
+                Current Temporary Password *
               </label>
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="password"
+                value={currentTempPassword}
+                onChange={(e) => setCurrentTempPassword(e.target.value)}
                 required
-                placeholder="admin@saec.ac.in or cashier@saec.ac.in"
-                style={{
-                  width: '100%',
-                  padding: '0.8rem 1rem',
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '10px',
-                  fontSize: '0.9rem',
-                  color: '#1e293b',
-                  fontWeight: 600,
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
+                placeholder="Enter the password provided to you"
+                className="input-field"
+                style={{ width: '100%' }}
               />
             </div>
 
             <div>
-              <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.4rem' }}>
-                Password
+              <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', display: 'block', marginBottom: '0.4rem' }}>
+                New Password *
               </label>
               <div style={{ position: 'relative' }}>
                 <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  type={showMandatoryPass ? 'text' : 'password'}
+                  value={mandatoryNewPassword}
+                  onChange={(e) => setMandatoryNewPassword(e.target.value)}
                   required
-                  placeholder="Enter your password"
-                  style={{
-                    width: '100%',
-                    padding: '0.8rem 2.5rem 0.8rem 1rem',
-                    background: '#f8fafc',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '10px',
-                    fontSize: '0.9rem',
-                    color: '#1e293b',
-                    fontWeight: 600,
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
+                  placeholder="Minimum 6 characters"
+                  className="input-field"
+                  style={{ width: '100%', paddingRight: '2.5rem' }}
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  onClick={() => setShowMandatoryPass(!showMandatoryPass)}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-dim)',
+                    cursor: 'pointer'
+                  }}
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showMandatoryPass ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', display: 'block', marginBottom: '0.4rem' }}>
+                Confirm New Password *
+              </label>
+              <input
+                type="password"
+                value={mandatoryConfirmPassword}
+                onChange={(e) => setMandatoryConfirmPassword(e.target.value)}
+                required
+                placeholder="Re-enter your new password"
+                className="input-field"
+                style={{ width: '100%' }}
+              />
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
               className="btn btn-primary"
-              style={{ width: '100%', padding: '0.9rem', fontSize: '0.95rem', marginTop: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+              style={{ width: '100%', padding: '0.9rem', fontSize: '0.95rem', fontWeight: 700, marginTop: '0.5rem' }}
             >
-              <LogIn size={18} /> {isSubmitting ? 'Verifying Credentials...' : 'Sign In to Portal'}
+              {isSubmitting ? 'Updating Password...' : 'Save Password & Continue'}
             </button>
           </form>
 
-          <div style={{ marginTop: '1.75rem', padding: '0.85rem 1rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '0.78rem', color: '#64748b' }}>
-            <div style={{ fontWeight: 800, color: '#1e293b', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <Lock size={14} color="#ea580c" /> Role-Based Access Control
-            </div>
-            Web portal is restricted to authorized Admin and Cashier accounts.
+          <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+            <button
+              onClick={handleLogout}
+              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.82rem', cursor: 'pointer', textDecoration: 'underline' }}
+            >
+              Cancel & Sign Out
+            </button>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. UN-AUTHENTICATED PORTAL (LOGIN / FORGOT PASSWORD / REGISTER)
+  if (!user) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          background: 'linear-gradient(135deg, #0f172a 0%, #431407 50%, #0f172a 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '2rem'
+        }}
+      >
+        <div
+          style={{
+            maxWidth: authView === 'REGISTER' ? '540px' : '480px',
+            width: '100%',
+            background: '#ffffff',
+            borderRadius: '24px',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.3)',
+            overflow: 'hidden',
+            padding: '2.75rem 2.25rem'
+          }}
+        >
+          {/* Header Branding */}
+          <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.85rem' }}>
+              <img
+                src="/saec_cafe_logo.jpg"
+                alt="SAEC CAFÉ Logo"
+                style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '50%',
+                  border: '3px solid #ea580c',
+                  boxShadow: '0 6px 18px rgba(234, 88, 12, 0.25)',
+                  objectFit: 'cover'
+                }}
+              />
+            </div>
+            <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#1e293b', margin: 0, letterSpacing: '-0.02em' }}>
+              SAEC <span style={{ color: '#ea580c' }}>CAFÉ</span>
+            </h1>
+            <p style={{ fontSize: '0.78rem', color: '#ea580c', fontWeight: 800, margin: '0.25rem 0 0 0', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              Good Food, Less Waiting.
+            </p>
+          </div>
+
+          {/* Success Message Banner */}
+          {authSuccessMessage && (
+            <div
+              style={{
+                background: '#ecfdf5',
+                border: '1px solid #a7f3d0',
+                borderRadius: '10px',
+                padding: '0.75rem 1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                color: '#047857',
+                fontSize: '0.82rem',
+                marginBottom: '1.25rem',
+                fontWeight: 600
+              }}
+            >
+              <CheckCircle2 size={18} />
+              <span>{authSuccessMessage}</span>
+            </div>
+          )}
+
+          {/* Error Message Banner */}
+          {loginError && (
+            <div
+              style={{
+                background: '#fef2f2',
+                border: '1px solid #fecaca',
+                borderRadius: '10px',
+                padding: '0.75rem 1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                color: '#b91c1c',
+                fontSize: '0.82rem',
+                marginBottom: '1.25rem',
+                fontWeight: 600
+              }}
+            >
+              <AlertCircle size={18} />
+              <span>{loginError}</span>
+            </div>
+          )}
+
+          {/* VIEW: LOGIN */}
+          {authView === 'LOGIN' && (
+            <>
+              <p style={{ fontSize: '0.85rem', color: '#64748b', textAlign: 'center', margin: '-0.5rem 0 1.5rem' }}>
+                Management Portal • Sign In
+              </p>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleLogin();
+                }}
+                style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}
+              >
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.4rem' }}>
+                    Institutional Email Address
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    placeholder="Enter your email address"
+                    className="input-field"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                    <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Password</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthView('FORGOT_PASSWORD');
+                        setLoginError('');
+                        setAuthSuccessMessage('');
+                      }}
+                      style={{ background: 'none', border: 'none', color: '#ea580c', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      placeholder="Enter your password"
+                      className="input-field"
+                      style={{ width: '100%', paddingRight: '2.5rem' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        color: '#94a3b8',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="btn btn-primary"
+                  style={{
+                    width: '100%',
+                    padding: '0.9rem',
+                    fontSize: '0.95rem',
+                    fontWeight: 700,
+                    marginTop: '0.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  {isSubmitting ? <RefreshCw size={18} className="animate-spin" /> : <LogIn size={18} />}
+                  {isSubmitting ? 'Verifying Credentials...' : 'Sign In to Portal'}
+                </button>
+              </form>
+
+              <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.85rem', color: '#64748b' }}>
+                New institutional user?{' '}
+                <button
+                  onClick={() => {
+                    setAuthView('REGISTER');
+                    setLoginError('');
+                    setAuthSuccessMessage('');
+                  }}
+                  style={{ background: 'none', border: 'none', color: '#ea580c', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Register Account
+                </button>
+              </div>
+
+              <div
+                style={{
+                  marginTop: '1.75rem',
+                  padding: '0.85rem 1rem',
+                  background: '#f8fafc',
+                  borderRadius: '12px',
+                  border: '1px solid #e2e8f0',
+                  fontSize: '0.78rem',
+                  color: '#64748b'
+                }}
+              >
+                <div style={{ fontWeight: 800, color: '#1e293b', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <Lock size={14} color="#ea580c" /> Role-Based Access Control
+                </div>
+                Web portal is restricted to authorized Admin and Cashier accounts.
+              </div>
+            </>
+          )}
+
+          {/* VIEW: FORGOT PASSWORD */}
+          {authView === 'FORGOT_PASSWORD' && (
+            <>
+              <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', margin: '0 0 0.35rem' }}>
+                  Forgot Password?
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0, lineHeight: 1.4 }}>
+                  Enter your registered institutional email address and we'll issue a password reset link.
+                </p>
+              </div>
+
+              <form onSubmit={handleForgotPasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.4rem' }}>
+                    Registered Email Address
+                  </label>
+                  <input
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    required
+                    placeholder="Enter your registered email"
+                    className="input-field"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="btn btn-primary"
+                  style={{ width: '100%', padding: '0.9rem', fontSize: '0.95rem', fontWeight: 700 }}
+                >
+                  {isSubmitting ? 'Sending...' : 'Send Reset Link'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthView('LOGIN');
+                    setLoginError('');
+                  }}
+                  className="btn btn-secondary"
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                >
+                  <ArrowLeft size={16} /> Back to Login
+                </button>
+              </form>
+            </>
+          )}
+
+          {/* VIEW: RESET LINK SENT */}
+          {authView === 'RESET_LINK_SENT' && (
+            <div style={{ textAlign: 'center' }}>
+              <div
+                style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '50%',
+                  background: '#ecfdf5',
+                  color: '#047857',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 1rem'
+                }}
+              >
+                <Mail size={28} />
+              </div>
+              <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#1e293b', margin: '0 0 0.5rem' }}>
+                Check Your Email
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: '#64748b', lineHeight: 1.5, marginBottom: '1.5rem' }}>
+                If an account exists for <strong>{forgotEmail}</strong>, a password reset link and token have been issued.
+              </p>
+
+              {resetToken && (
+                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px dashed var(--primary-border)', marginBottom: '1.5rem' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Reset Token (Simulation)</div>
+                  <div style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--primary)', fontSize: '0.9rem' }}>{resetToken}</div>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <button
+                  onClick={() => setAuthView('RESET_PASSWORD')}
+                  className="btn btn-primary"
+                  style={{ width: '100%' }}
+                >
+                  Enter New Password
+                </button>
+                <button
+                  onClick={() => setAuthView('LOGIN')}
+                  className="btn btn-secondary"
+                  style={{ width: '100%' }}
+                >
+                  Back to Login
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* VIEW: RESET PASSWORD FORM */}
+          {authView === 'RESET_PASSWORD' && (
+            <>
+              <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', margin: '0 0 0.35rem' }}>
+                  Reset Your Password
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
+                  Enter your reset token and new secure password.
+                </p>
+              </div>
+
+              <form onSubmit={handleResetPasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.4rem' }}>
+                    Reset Token *
+                  </label>
+                  <input
+                    type="text"
+                    value={resetToken}
+                    onChange={(e) => setResetToken(e.target.value)}
+                    required
+                    placeholder="Enter reset token"
+                    className="input-field"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.4rem' }}>
+                    New Password *
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                      placeholder="Minimum 6 characters"
+                      className="input-field"
+                      style={{ width: '100%', paddingRight: '2.5rem' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        color: '#94a3b8',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.4rem' }}>
+                    Confirm New Password *
+                  </label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    placeholder="Re-enter new password"
+                    className="input-field"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="btn btn-primary"
+                  style={{ width: '100%', padding: '0.9rem', fontSize: '0.95rem', fontWeight: 700 }}
+                >
+                  {isSubmitting ? 'Resetting...' : 'Reset Password'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setAuthView('LOGIN')}
+                  className="btn btn-secondary"
+                  style={{ width: '100%' }}
+                >
+                  Cancel
+                </button>
+              </form>
+            </>
+          )}
+
+          {/* VIEW: REGISTER */}
+          {authView === 'REGISTER' && (
+            <>
+              <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', margin: '0 0 0.35rem' }}>
+                  Register Institutional Account
+                </h3>
+                <div
+                  style={{
+                    background: '#fffbeb',
+                    border: '1px solid #fde68a',
+                    borderRadius: '10px',
+                    padding: '0.65rem 0.85rem',
+                    fontSize: '0.78rem',
+                    color: '#b45309',
+                    marginTop: '0.5rem',
+                    lineHeight: 1.4,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  <Clock size={16} style={{ flexShrink: 0 }} />
+                  <span>Your account will be reviewed by the administrator before you can log in.</span>
+                </div>
+              </div>
+
+              <form onSubmit={handleRegistrationSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setRegRole('STUDENT')}
+                    style={{
+                      flex: 1,
+                      padding: '0.5rem',
+                      borderRadius: '8px',
+                      border: regRole === 'STUDENT' ? '2px solid var(--primary)' : '1px solid var(--border)',
+                      background: regRole === 'STUDENT' ? 'var(--primary-light)' : '#ffffff',
+                      color: regRole === 'STUDENT' ? 'var(--primary)' : 'var(--text-muted)',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🎓 Student
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRegRole('FACULTY')}
+                    style={{
+                      flex: 1,
+                      padding: '0.5rem',
+                      borderRadius: '8px',
+                      border: regRole === 'FACULTY' ? '2px solid var(--primary)' : '1px solid var(--border)',
+                      background: regRole === 'FACULTY' ? 'var(--primary-light)' : '#ffffff',
+                      color: regRole === 'FACULTY' ? 'var(--primary)' : 'var(--text-muted)',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    👨‍🏫 Faculty / Staff
+                  </button>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.3rem' }}>
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={regFullName}
+                    onChange={(e) => setRegFullName(e.target.value)}
+                    required
+                    placeholder="e.g. S. Vignesh"
+                    className="input-field"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.3rem' }}>
+                      Institutional Email *
+                    </label>
+                    <input
+                      type="email"
+                      value={regEmail}
+                      onChange={(e) => setRegEmail(e.target.value)}
+                      required
+                      placeholder="username@saec.ac.in"
+                      className="input-field"
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.3rem' }}>
+                      Mobile Phone *
+                    </label>
+                    <input
+                      type="tel"
+                      value={regMobile}
+                      onChange={(e) => setRegMobile(e.target.value)}
+                      required
+                      placeholder="9876543210"
+                      className="input-field"
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: regRole === 'STUDENT' ? '1fr 1fr' : '1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.3rem' }}>
+                      {regRole === 'STUDENT' ? 'Student Register No *' : 'Staff Identification No *'}
+                    </label>
+                    <input
+                      type="text"
+                      value={regIdNumber}
+                      onChange={(e) => setRegIdNumber(e.target.value)}
+                      required
+                      placeholder={regRole === 'STUDENT' ? '912821104001' : 'SAEC-FAC-042'}
+                      className="input-field"
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+
+                  {regRole === 'STUDENT' && (
+                    <div>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.3rem' }}>
+                        Academic Year
+                      </label>
+                      <select
+                        value={regYear}
+                        onChange={(e) => setRegYear(Number(e.target.value))}
+                        className="input-field"
+                        style={{ width: '100%' }}
+                      >
+                        <option value={1}>1st Year</option>
+                        <option value={2}>2nd Year</option>
+                        <option value={3}>3rd Year</option>
+                        <option value={4}>4th Year</option>
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.3rem' }}>
+                    Department
+                  </label>
+                  <select
+                    value={regDepartment}
+                    onChange={(e) => setRegDepartment(e.target.value)}
+                    className="input-field"
+                    style={{ width: '100%' }}
+                  >
+                    <option value="Computer Science and Engineering">Computer Science & Engineering (CSE)</option>
+                    <option value="Information Technology">Information Technology (IT)</option>
+                    <option value="Electronics and Communication Engineering">Electronics & Communication (ECE)</option>
+                    <option value="Electrical and Electronics Engineering">Electrical & Electronics (EEE)</option>
+                    <option value="Mechanical Engineering">Mechanical Engineering (MECH)</option>
+                    <option value="Civil Engineering">Civil Engineering (CIVIL)</option>
+                    <option value="Artificial Intelligence and Data Science">AI & Data Science (AI&DS)</option>
+                    <option value="Science and Humanities">Science & Humanities (S&H)</option>
+                    <option value="Master of Business Administration">Master of Business Administration (MBA)</option>
+                  </select>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="btn btn-primary"
+                  style={{ width: '100%', padding: '0.85rem', fontSize: '0.95rem', fontWeight: 700, marginTop: '0.25rem' }}
+                >
+                  {isSubmitting ? 'Submitting Registration...' : 'Submit Registration'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthView('LOGIN');
+                    setLoginError('');
+                  }}
+                  className="btn btn-secondary"
+                  style={{ width: '100%' }}
+                >
+                  Already have an account? Sign In
+                </button>
+              </form>
+            </>
+          )}
+
+          {/* VIEW: REGISTRATION SUCCESS */}
+          {authView === 'REGISTRATION_SUCCESS' && (
+            <div style={{ textAlign: 'center' }}>
+              <div
+                style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '50%',
+                  background: '#ecfdf5',
+                  color: '#047857',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 1rem'
+                }}
+              >
+                <CheckCircle2 size={32} />
+              </div>
+              <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#1e293b', margin: '0 0 0.5rem' }}>
+                Registration Submitted
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: '#64748b', lineHeight: 1.5, marginBottom: '1.5rem' }}>
+                Your account has been successfully registered and is waiting for administrator approval.
+              </p>
+
+              <div
+                style={{
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '12px',
+                  padding: '1.25rem',
+                  textAlign: 'left',
+                  fontSize: '0.85rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem',
+                  marginBottom: '1.75rem'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#047857', fontWeight: 600 }}>
+                  <CheckCircle2 size={16} /> Registration submitted
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#b45309', fontWeight: 600 }}>
+                  <Clock size={16} /> Administrator review pending
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748b' }}>
+                  <Mail size={16} /> You will receive your temporary password upon activation
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  setAuthView('LOGIN');
+                  setAuthSuccessMessage('');
+                }}
+                className="btn btn-primary"
+                style={{ width: '100%' }}
+              >
+                Back to Login
+              </button>
+            </div>
+          )}
 
           <div style={{ marginTop: '1.5rem', fontSize: '0.72rem', color: '#94a3b8', textAlign: 'center' }}>
             Syed Ammal Engineering College • C++ Cafe Canteen
@@ -205,7 +1095,7 @@ export function App() {
     );
   }
 
-  // Permitted view tabs based on role
+  // 3. AUTHENTICATED DASHBOARD (ADMIN & CASHIER)
   const isTabAllowed = (tab: string, role: string) => {
     switch (role) {
       case 'ADMIN':
@@ -217,11 +1107,20 @@ export function App() {
     }
   };
 
-  const safeTab = isTabAllowed(activeTab, user.role) ? activeTab : (user.role === 'CASHIER' ? 'pos' : 'dashboard');
+  const safeTab = isTabAllowed(activeTab, user.role)
+    ? activeTab
+    : user.role === 'CASHIER'
+    ? 'pos'
+    : 'dashboard';
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', color: '#1e293b' }}>
-      <Navbar user={user} businessStatus={businessStatus} onLogout={handleLogout} onSwitchRole={(e, p) => handleLogin(e, p)} />
+      <Navbar
+        user={user}
+        businessStatus={businessStatus}
+        onLogout={() => setShowLogoutConfirm(true)}
+        onSwitchRole={(e, p) => handleLogin(e, p)}
+      />
 
       <div style={{ display: 'flex' }}>
         <Sidebar
@@ -247,6 +1146,74 @@ export function App() {
           {safeTab === 'settings' && <SystemSettingsView />}
         </main>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1rem'
+          }}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '20px',
+              maxWidth: '400px',
+              width: '100%',
+              padding: '2rem',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.3)',
+              textAlign: 'center'
+            }}
+          >
+            <div
+              style={{
+                width: '50px',
+                height: '50px',
+                borderRadius: '50%',
+                background: '#fff7ed',
+                color: 'var(--primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 1rem'
+              }}
+            >
+              <LogIn size={26} style={{ transform: 'rotate(180deg)' }} />
+            </div>
+
+            <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)' }}>
+              Confirm Sign Out
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+              Are you sure you want to log out of the SAEC CAFÉ Management Portal?
+            </p>
+
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="btn btn-secondary"
+                style={{ flex: 1 }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleLogout}
+                className="btn btn-primary"
+                style={{ flex: 1, fontWeight: 700 }}
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -182,6 +182,74 @@ export const api = {
     return await res.json();
   },
 
+  async createCustomerOrder(payload: {
+    items: { product_id: number; quantity: number }[];
+    pickup_time?: string;
+    notes?: string;
+    payment_method?: string;
+    customer_type?: string;
+  }): Promise<Order> {
+    const res = await fetch(`${API_BASE_URL}/orders/`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({
+        customer_type: payload.customer_type || 'STUDENT',
+        order_source: 'MOBILE',
+        items: payload.items,
+        pickup_time: payload.pickup_time || null,
+        notes: payload.notes || '',
+        is_paid: false,
+        payment_method: payload.payment_method || 'CASH'
+      })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || err.detail || 'Failed to place order. Please try again.');
+    }
+    return await res.json();
+  },
+
+  async submitContactOrder(payload: {
+    product_id: number;
+    quantity: number;
+    preferred_pickup_time: string;
+    special_instructions?: string;
+  }): Promise<ContactOrderRequest> {
+    const res = await fetch(`${API_BASE_URL}/contact-orders/`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || err.detail || 'Failed to submit contact catering request.');
+    }
+    return await res.json();
+  },
+
+  async submitPaymentSupportTicket(orderId: number, transactionId: string, screenshot?: File): Promise<PaymentSupportTicket> {
+    const formData = new FormData();
+    formData.append('order_id', String(orderId));
+    formData.append('transaction_id', transactionId.trim());
+    if (screenshot) {
+      formData.append('screenshot', screenshot);
+    }
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const res = await fetch(`${API_BASE_URL}/payment-support/`, {
+      method: 'POST',
+      headers,
+      body: formData
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || err.detail || 'Failed to submit payment support ticket.');
+    }
+    return await res.json();
+  },
+
   async getOrders(): Promise<Order[]> {
     try {
       const res = await fetch(`${API_BASE_URL}/orders/`, { headers: authHeaders() });

@@ -1,0 +1,21 @@
+{
+  "name": "SAEC CAFÉ",
+  "short_name": "SAEC CAFÉ",
+  "description": "Good Food, Less Waiting. Syed Ammal Engineering College Canteen Food Ordering & Management App",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#ea580c",
+  "icons": [
+    {
+      "src": "/saec_cafe_logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "/saec_cafe_logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}

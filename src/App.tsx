@@ -13,11 +13,11 @@ import { ContactOrdersView } from './components/ContactOrdersView';
 import { PaymentSupportView } from './components/PaymentSupportView';
 import { InventoryView } from './components/InventoryView';
 import { AnalyticsView } from './components/AnalyticsView';
+import { StudentOrderingView } from './components/StudentOrderingView';
 import { api, setAuthToken } from './services/api';
 import type { User } from './types';
 import {
   LogIn,
-  Lock,
   AlertCircle,
   Eye,
   EyeOff,
@@ -26,38 +26,52 @@ import {
   KeyRound,
   ArrowLeft,
   RefreshCw,
-  ShieldCheck,
-  Store
+  GraduationCap,
+  Briefcase,
+  UserPlus
 } from 'lucide-react';
 
 type AuthViewMode =
   | 'LOGIN'
+  | 'REGISTER'
+  | 'REGISTRATION_SUCCESS'
   | 'FORGOT_PASSWORD'
   | 'RESET_LINK_SENT'
   | 'RESET_PASSWORD';
-
-type WebSelectedRole = 'ADMIN' | 'CASHIER';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [user, setUser] = useState<User | null>(null);
   const [authView, setAuthView] = useState<AuthViewMode>('LOGIN');
-  const [selectedRole, setSelectedRole] = useState<WebSelectedRole>('ADMIN');
 
   const [businessStatus, setBusinessStatus] = useState<any>({
     is_ordering_open: true,
-    message: '🟢 ORDERING OPEN',
+    message: '🟢 SAEC CAFÉ • Ordering Open (10:00 AM – 3:30 PM)',
     status: 'WORKING_DAY',
     opening_time: '10:00',
     closing_time: '15:30'
   });
 
   // Login Form State
-  const [email, setEmail] = useState('admin@saec.ac.in');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Registration Form State
+  const [regRole, setRegRole] = useState<'STUDENT' | 'FACULTY'>('STUDENT');
+  const [regFullName, setRegFullName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regMobile, setRegMobile] = useState('');
+  const [regRegisterNumber, setRegRegisterNumber] = useState('');
+  const [regStaffNumber, setRegStaffNumber] = useState('');
+  const [regDepartment, setRegDepartment] = useState('Computer Science & Engineering');
+  const [regYear, setRegYear] = useState<number>(1);
+  const [regPassword, setRegPassword] = useState('');
+  const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [showRegPassword, setShowRegPassword] = useState(false);
+  const [registrationMessage, setRegistrationMessage] = useState('');
 
   // Forgot / Reset Password State
   const [forgotEmail, setForgotEmail] = useState('');
@@ -90,20 +104,6 @@ export function App() {
     }
   }
 
-  // Auto-fill default credentials based on selected role tab for testing convenience
-  const handleSelectRoleTab = (role: WebSelectedRole) => {
-    setSelectedRole(role);
-    setLoginError('');
-    setAuthSuccessMessage('');
-    if (role === 'ADMIN') {
-      setEmail('admin@saec.ac.in');
-      setPassword('admin123');
-    } else {
-      setEmail('cashier@saec.ac.in');
-      setPassword('cashier123');
-    }
-  };
-
   const handleLogin = async (eEmail?: string, ePassword?: string) => {
     setIsSubmitting(true);
     setLoginError('');
@@ -112,30 +112,82 @@ export function App() {
       const loginPass = ePassword || password;
       const { user: u } = await api.login(loginEmail, loginPass);
 
-      // Enforce Web Role Gate: Only ADMIN and CASHIER are permitted on Web Portal
-      if (u.role !== 'ADMIN' && u.role !== 'CASHIER') {
-        setAuthToken(null);
-        setUser(null);
-        setLoginError(
-          '403 Forbidden: Web access is available only to authorized Admin and Cashier accounts. Student and Faculty accounts must use the SAEC CAFÉ Mobile Application.'
-        );
-        return;
-      }
-
-      // Verify that user logged into matching selected role or authorized web role
       setUser(u);
       setLoginError('');
 
       // Role-based landing page routing:
-      // ADMIN -> Admin Dashboard
-      // CASHIER -> Cashier POS Counter
-      if (u.role === 'CASHIER') {
-        setActiveTab('pos');
-      } else {
+      // ADMIN -> Admin Overview Dashboard
+      // STUDENT / FACULTY -> Student/Faculty Ordering Interface
+      if (u.role === 'ADMIN' || (u.role as string) === 'CASHIER') {
         setActiveTab('dashboard');
+      } else {
+        setActiveTab('menu');
       }
     } catch (e: any) {
       setLoginError(e.message || 'Incorrect email or password. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (regPassword !== regConfirmPassword) {
+      setLoginError('Passwords do not match.');
+      return;
+    }
+    if (regPassword.length < 6) {
+      setLoginError('Password must be at least 6 characters.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setLoginError('');
+
+    try {
+      if (regRole === 'STUDENT') {
+        if (!regRegisterNumber.trim()) {
+          setLoginError('Please enter your Student Register Number.');
+          setIsSubmitting(false);
+          return;
+        }
+        await api.registerStudent({
+          full_name: regFullName.trim(),
+          email: regEmail.trim().toLowerCase(),
+          mobile_number: regMobile.trim(),
+          register_number: regRegisterNumber.trim(),
+          department: regDepartment,
+          year: Number(regYear)
+        });
+      } else {
+        if (!regStaffNumber.trim()) {
+          setLoginError('Please enter your Faculty Staff Number.');
+          setIsSubmitting(false);
+          return;
+        }
+        await api.registerFaculty({
+          full_name: regFullName.trim(),
+          email: regEmail.trim().toLowerCase(),
+          mobile_number: regMobile.trim(),
+          staff_number: regStaffNumber.trim(),
+          department: regDepartment
+        });
+      }
+
+      setRegistrationMessage(
+        'Your registration has been submitted and is waiting for administrator approval.'
+      );
+      setAuthView('REGISTRATION_SUCCESS');
+      // Clear form
+      setRegFullName('');
+      setRegEmail('');
+      setRegMobile('');
+      setRegRegisterNumber('');
+      setRegStaffNumber('');
+      setRegPassword('');
+      setRegConfirmPassword('');
+    } catch (err: any) {
+      setLoginError(err.message || 'Registration failed. Please check your inputs.');
     } finally {
       setIsSubmitting(false);
     }
@@ -227,9 +279,8 @@ export function App() {
   const handleLogout = () => {
     setAuthToken(null);
     setUser(null);
-    setEmail('admin@saec.ac.in');
-    setPassword('admin123');
-    setSelectedRole('ADMIN');
+    setEmail('');
+    setPassword('');
     setAuthView('LOGIN');
     setShowLogoutConfirm(false);
     setActiveTab('dashboard');
@@ -245,7 +296,7 @@ export function App() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '2rem'
+          padding: '1.5rem'
         }}
       >
         <div
@@ -255,7 +306,7 @@ export function App() {
             background: '#ffffff',
             borderRadius: '24px',
             boxShadow: '0 25px 60px rgba(0,0,0,0.3)',
-            padding: '2.75rem 2.25rem'
+            padding: '2.5rem 2rem'
           }}
         >
           <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
@@ -275,10 +326,10 @@ export function App() {
               <KeyRound size={28} />
             </div>
             <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.4rem' }}>
-              Create Your New Password
+              Create Your Permanent Password
             </h2>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
-              You are currently using an administrator-issued temporary password. Please choose a new, permanent password to secure your account.
+              You are currently using an administrator-issued temporary password. Please choose a new password to secure your account.
             </p>
           </div>
 
@@ -313,7 +364,7 @@ export function App() {
                 value={currentTempPassword}
                 onChange={(e) => setCurrentTempPassword(e.target.value)}
                 required
-                placeholder="Enter the password provided to you"
+                placeholder="Enter password given by admin"
                 className="input-field"
                 style={{ width: '100%' }}
               />
@@ -390,7 +441,7 @@ export function App() {
     );
   }
 
-  // 2. UN-AUTHENTICATED WEB PORTAL (ADMIN & CASHIER LOGIN ONLY)
+  // 2. UN-AUTHENTICATED PORTAL (SINGLE LOGIN & STUDENT/FACULTY REGISTRATION)
   if (!user) {
     return (
       <div
@@ -400,23 +451,23 @@ export function App() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '2rem'
+          padding: '1.5rem 1rem'
         }}
       >
         <div
           style={{
-            maxWidth: '480px',
+            maxWidth: authView === 'REGISTER' ? '540px' : '480px',
             width: '100%',
             background: '#ffffff',
             borderRadius: '24px',
             boxShadow: '0 25px 60px rgba(0,0,0,0.3)',
             overflow: 'hidden',
-            padding: '2.75rem 2.25rem'
+            padding: '2.5rem 2rem'
           }}
         >
           {/* Header Branding */}
-          <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.85rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.75rem' }}>
               <img
                 src="/saec_cafe_logo.jpg"
                 alt="SAEC CAFÉ Logo"
@@ -433,72 +484,10 @@ export function App() {
             <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#1e293b', margin: 0, letterSpacing: '-0.02em' }}>
               SAEC <span style={{ color: '#ea580c' }}>CAFÉ</span>
             </h1>
-            <p style={{ fontSize: '0.78rem', color: '#ea580c', fontWeight: 800, margin: '0.25rem 0 0 0', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              Management Portal
+            <p style={{ fontSize: '0.78rem', color: '#ea580c', fontWeight: 800, margin: '0.2rem 0 0 0', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              Syed Ammal Engineering College
             </p>
           </div>
-
-          {/* Role Selection Tabs: Admin Login vs Cashier Login */}
-          {authView === 'LOGIN' && (
-            <div
-              style={{
-                display: 'flex',
-                background: '#f1f5f9',
-                borderRadius: '12px',
-                padding: '4px',
-                marginBottom: '1.5rem'
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => handleSelectRoleTab('ADMIN')}
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5rem',
-                  padding: '0.65rem 0.5rem',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: selectedRole === 'ADMIN' ? '#ffffff' : 'transparent',
-                  color: selectedRole === 'ADMIN' ? '#ea580c' : '#64748b',
-                  fontWeight: selectedRole === 'ADMIN' ? 800 : 600,
-                  fontSize: '0.85rem',
-                  cursor: 'pointer',
-                  boxShadow: selectedRole === 'ADMIN' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <ShieldCheck size={16} />
-                Admin Login
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSelectRoleTab('CASHIER')}
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5rem',
-                  padding: '0.65rem 0.5rem',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: selectedRole === 'CASHIER' ? '#ffffff' : 'transparent',
-                  color: selectedRole === 'CASHIER' ? '#ea580c' : '#64748b',
-                  fontWeight: selectedRole === 'CASHIER' ? 800 : 600,
-                  fontSize: '0.85rem',
-                  cursor: 'pointer',
-                  boxShadow: selectedRole === 'CASHIER' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <Store size={16} />
-                Cashier Login
-              </button>
-            </div>
-          )}
 
           {/* Success Message Banner */}
           {authSuccessMessage && (
@@ -544,11 +533,11 @@ export function App() {
             </div>
           )}
 
-          {/* VIEW: LOGIN */}
+          {/* ==================== VIEW: LOGIN ==================== */}
           {authView === 'LOGIN' && (
             <>
-              <p style={{ fontSize: '0.85rem', color: '#64748b', textAlign: 'center', margin: '-0.5rem 0 1.5rem' }}>
-                Sign in to access the {selectedRole === 'ADMIN' ? 'Administrator Central' : 'POS Cashier Counter'}
+              <p style={{ fontSize: '0.85rem', color: '#64748b', textAlign: 'center', margin: '-0.5rem 0 1.25rem' }}>
+                Sign in to order food, track preparation, or access management.
               </p>
 
               <form
@@ -560,14 +549,14 @@ export function App() {
               >
                 <div>
                   <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.4rem' }}>
-                    {selectedRole === 'ADMIN' ? 'Admin Email Address' : 'Cashier Staff Email'}
+                    Email Address
                   </label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    placeholder="name@saec.ac.in"
+                    placeholder="student@saec.ac.in, faculty@saec.ac.in, admin@saec.ac.in"
                     className="input-field"
                     style={{ width: '100%' }}
                   />
@@ -634,45 +623,355 @@ export function App() {
                   }}
                 >
                   {isSubmitting ? <RefreshCw size={18} className="animate-spin" /> : <LogIn size={18} />}
-                  {isSubmitting ? 'Verifying Credentials...' : `Sign In as ${selectedRole === 'ADMIN' ? 'Admin' : 'Cashier'}`}
+                  {isSubmitting ? 'Authenticating...' : 'Sign In'}
                 </button>
               </form>
 
+              {/* Registration Link */}
               <div
                 style={{
                   marginTop: '1.75rem',
-                  padding: '0.85rem 1rem',
+                  padding: '1rem',
                   background: '#f8fafc',
                   borderRadius: '12px',
                   border: '1px solid #e2e8f0',
-                  fontSize: '0.78rem',
-                  color: '#64748b'
+                  textAlign: 'center'
                 }}
               >
-                <div style={{ fontWeight: 800, color: '#1e293b', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <Lock size={14} color="#ea580c" /> Staff Portal Only
+                <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.5rem' }}>
+                  Don't have an account yet?
                 </div>
-                Student and Faculty registration and ordering are available exclusively on the SAEC CAFÉ Mobile Application.
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthView('REGISTER');
+                    setLoginError('');
+                    setAuthSuccessMessage('');
+                  }}
+                  className="btn btn-secondary"
+                  style={{ width: '100%', fontWeight: 700, color: '#ea580c', borderColor: '#fed7aa' }}
+                >
+                  <UserPlus size={16} /> Register as Student / Faculty
+                </button>
               </div>
             </>
           )}
 
-          {/* VIEW: FORGOT PASSWORD */}
+          {/* ==================== VIEW: REGISTER ==================== */}
+          {authView === 'REGISTER' && (
+            <>
+              <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', margin: '0 0 0.25rem' }}>
+                  Create Institutional Account
+                </h3>
+                <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>
+                  Register to order meals from the campus canteen.
+                </p>
+              </div>
+
+              {/* Role Switcher Tab: Student vs Faculty */}
+              <div
+                style={{
+                  display: 'flex',
+                  background: '#f1f5f9',
+                  borderRadius: '10px',
+                  padding: '4px',
+                  marginBottom: '1.25rem'
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setRegRole('STUDENT')}
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.4rem',
+                    padding: '0.55rem',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: regRole === 'STUDENT' ? '#ffffff' : 'transparent',
+                    color: regRole === 'STUDENT' ? '#ea580c' : '#64748b',
+                    fontWeight: regRole === 'STUDENT' ? 800 : 600,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                    boxShadow: regRole === 'STUDENT' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none'
+                  }}
+                >
+                  <GraduationCap size={16} /> Student
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRegRole('FACULTY')}
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.4rem',
+                    padding: '0.55rem',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: regRole === 'FACULTY' ? '#ffffff' : 'transparent',
+                    color: regRole === 'FACULTY' ? '#ea580c' : '#64748b',
+                    fontWeight: regRole === 'FACULTY' ? 800 : 600,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                    boxShadow: regRole === 'FACULTY' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none'
+                  }}
+                >
+                  <Briefcase size={16} /> Faculty / Staff
+                </button>
+              </div>
+
+              <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.25rem' }}>
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={regFullName}
+                    onChange={(e) => setRegFullName(e.target.value)}
+                    required
+                    placeholder="e.g. S. Vignesh"
+                    className="input-field"
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.25rem' }}>
+                      Institutional Email *
+                    </label>
+                    <input
+                      type="email"
+                      value={regEmail}
+                      onChange={(e) => setRegEmail(e.target.value)}
+                      required
+                      placeholder="name@saec.ac.in"
+                      className="input-field"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.25rem' }}>
+                      Mobile Phone *
+                    </label>
+                    <input
+                      type="tel"
+                      value={regMobile}
+                      onChange={(e) => setRegMobile(e.target.value)}
+                      required
+                      placeholder="9876543210"
+                      className="input-field"
+                    />
+                  </div>
+                </div>
+
+                {regRole === 'STUDENT' ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.25rem' }}>
+                        Register Number *
+                      </label>
+                      <input
+                        type="text"
+                        value={regRegisterNumber}
+                        onChange={(e) => setRegRegisterNumber(e.target.value)}
+                        required
+                        placeholder="e.g. 912821104001"
+                        className="input-field"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.25rem' }}>
+                        Year of Study *
+                      </label>
+                      <select
+                        value={regYear}
+                        onChange={(e) => setRegYear(Number(e.target.value))}
+                        className="input-field"
+                      >
+                        <option value={1}>1st Year</option>
+                        <option value={2}>2nd Year</option>
+                        <option value={3}>3rd Year</option>
+                        <option value={4}>4th Year</option>
+                      </select>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.25rem' }}>
+                      Staff ID Number *
+                    </label>
+                    <input
+                      type="text"
+                      value={regStaffNumber}
+                      onChange={(e) => setRegStaffNumber(e.target.value)}
+                      required
+                      placeholder="e.g. SAEC-FAC-104"
+                      className="input-field"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.25rem' }}>
+                    Department *
+                  </label>
+                  <select
+                    value={regDepartment}
+                    onChange={(e) => setRegDepartment(e.target.value)}
+                    className="input-field"
+                  >
+                    <option value="Computer Science & Engineering">Computer Science & Engineering</option>
+                    <option value="Information Technology">Information Technology</option>
+                    <option value="Electronics & Communication">Electronics & Communication</option>
+                    <option value="Electrical & Electronics">Electrical & Electronics</option>
+                    <option value="Mechanical Engineering">Mechanical Engineering</option>
+                    <option value="Civil Engineering">Civil Engineering</option>
+                    <option value="Artificial Intelligence & Data Science">Artificial Intelligence & Data Science</option>
+                    <option value="Science & Humanities">Science & Humanities</option>
+                    <option value="Management Studies">Management Studies</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.25rem' }}>
+                      Password (Min 6) *
+                    </label>
+                    <input
+                      type={showRegPassword ? 'text' : 'password'}
+                      value={regPassword}
+                      onChange={(e) => setRegPassword(e.target.value)}
+                      required
+                      placeholder="••••••••"
+                      className="input-field"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.25rem' }}>
+                      Confirm Password *
+                    </label>
+                    <input
+                      type={showRegPassword ? 'text' : 'password'}
+                      value={regConfirmPassword}
+                      onChange={(e) => setRegConfirmPassword(e.target.value)}
+                      required
+                      placeholder="••••••••"
+                      className="input-field"
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '-0.3rem' }}>
+                  <input
+                    type="checkbox"
+                    id="showRegPass"
+                    checked={showRegPassword}
+                    onChange={() => setShowRegPassword(!showRegPassword)}
+                  />
+                  <label htmlFor="showRegPass" style={{ fontSize: '0.75rem', color: '#64748b', cursor: 'pointer' }}>
+                    Show Passwords
+                  </label>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="btn btn-primary"
+                  style={{ width: '100%', padding: '0.85rem', fontSize: '0.92rem', fontWeight: 700, marginTop: '0.35rem' }}
+                >
+                  {isSubmitting ? 'Submitting Registration...' : 'Submit Registration'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthView('LOGIN');
+                    setLoginError('');
+                  }}
+                  className="btn btn-secondary"
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                >
+                  <ArrowLeft size={16} /> Already registered? Sign In
+                </button>
+              </form>
+            </>
+          )}
+
+          {/* ==================== VIEW: REGISTRATION SUCCESS ==================== */}
+          {authView === 'REGISTRATION_SUCCESS' && (
+            <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+              <div
+                style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '50%',
+                  background: '#fff7ed',
+                  color: '#ea580c',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 1.25rem',
+                  boxShadow: '0 4px 16px rgba(234, 88, 12, 0.2)'
+                }}
+              >
+                <CheckCircle2 size={36} />
+              </div>
+
+              <h3 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#1e293b', margin: '0 0 0.5rem' }}>
+                Registration Submitted!
+              </h3>
+              <p style={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.5, marginBottom: '1.75rem' }}>
+                {registrationMessage}
+              </p>
+
+              <div
+                style={{
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '12px',
+                  padding: '1rem',
+                  fontSize: '0.8rem',
+                  color: '#64748b',
+                  marginBottom: '1.5rem',
+                  textAlign: 'left'
+                }}
+              >
+                <div style={{ fontWeight: 800, color: '#1e293b', marginBottom: '0.35rem' }}>Next Steps:</div>
+                1. The canteen admin will verify your institutional registration.<br />
+                2. Once approved, you can sign in using your registered email and password.
+              </div>
+
+              <button
+                onClick={() => setAuthView('LOGIN')}
+                className="btn btn-primary"
+                style={{ width: '100%', fontWeight: 700 }}
+              >
+                Back to Sign In
+              </button>
+            </div>
+          )}
+
+          {/* ==================== VIEW: FORGOT PASSWORD ==================== */}
           {authView === 'FORGOT_PASSWORD' && (
             <>
               <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', margin: '0 0 0.35rem' }}>
-                  Staff Password Recovery
+                  Account Password Recovery
                 </h3>
                 <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0, lineHeight: 1.4 }}>
-                  Enter your registered institutional staff email address to receive a secure password reset link.
+                  Enter your registered institutional email address to receive a secure password reset token.
                 </p>
               </div>
 
               <form onSubmit={handleForgotPasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
                 <div>
                   <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.4rem' }}>
-                    Staff Email Address
+                    Registered Email Address
                   </label>
                   <input
                     type="email"
@@ -709,7 +1008,7 @@ export function App() {
             </>
           )}
 
-          {/* VIEW: RESET LINK SENT */}
+          {/* ==================== VIEW: RESET LINK SENT ==================== */}
           {authView === 'RESET_LINK_SENT' && (
             <div style={{ textAlign: 'center' }}>
               <div
@@ -731,7 +1030,7 @@ export function App() {
                 Check Your Email
               </h3>
               <p style={{ fontSize: '0.85rem', color: '#64748b', lineHeight: 1.5, marginBottom: '1.5rem' }}>
-                If an account exists for <strong>{forgotEmail}</strong>, a password reset link and verification token have been issued.
+                If an active account exists for <strong>{forgotEmail}</strong>, a password reset verification token has been issued.
               </p>
 
               {resetToken && (
@@ -760,12 +1059,12 @@ export function App() {
             </div>
           )}
 
-          {/* VIEW: RESET PASSWORD FORM */}
+          {/* ==================== VIEW: RESET PASSWORD FORM ==================== */}
           {authView === 'RESET_PASSWORD' && (
             <>
               <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', margin: '0 0 0.35rem' }}>
-                  Reset Staff Password
+                  Choose New Password
                 </h3>
                 <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
                   Enter your reset token and new secure password.
@@ -790,7 +1089,7 @@ export function App() {
 
                 <div>
                   <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.4rem' }}>
-                    New Password *
+                    New Password (Min 6) *
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
@@ -858,33 +1157,25 @@ export function App() {
           )}
 
           <div style={{ marginTop: '1.5rem', fontSize: '0.72rem', color: '#94a3b8', textAlign: 'center' }}>
-            Syed Ammal Engineering College • C++ Cafe Canteen Portal
+            Syed Ammal Engineering College • Canteen Automation System
           </div>
         </div>
       </div>
     );
   }
 
-  // 3. AUTHENTICATED DASHBOARD (ADMIN & CASHIER ROLE SEPARATION)
-  const isTabAllowed = (tab: string, role: string) => {
-    switch (role) {
-      case 'ADMIN':
-        return true;
-      case 'CASHIER':
-        // Cashier has access strictly to POS Counter, Orders, FCFS Board, and Contact orders
-        return ['pos', 'orders', 'fcfs', 'contact'].includes(tab);
-      default:
-        return false;
-    }
-  };
+  // 3. STUDENT & FACULTY USER PORTAL
+  if (user.role === 'STUDENT' || user.role === 'FACULTY') {
+    return (
+      <StudentOrderingView
+        user={user}
+        businessStatus={businessStatus}
+        onLogout={() => setShowLogoutConfirm(true)}
+      />
+    );
+  }
 
-  // Prevent Cashier from accessing Admin-only tabs
-  const safeTab = isTabAllowed(activeTab, user.role)
-    ? activeTab
-    : user.role === 'CASHIER'
-    ? 'pos'
-    : 'dashboard';
-
+  // 4. ADMIN MANAGEMENT PORTAL
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', color: '#1e293b' }}>
       <Navbar
@@ -897,31 +1188,25 @@ export function App() {
       <div style={{ display: 'flex' }}>
         <Sidebar
           user={user}
-          activeTab={safeTab}
-          setActiveTab={(tab) => {
-            if (isTabAllowed(tab, user.role)) {
-              setActiveTab(tab);
-            } else if (user.role === 'CASHIER') {
-              alert('Access Denied: This management module is restricted to Administrator accounts.');
-            }
-          }}
+          activeTab={activeTab}
+          setActiveTab={(tab) => setActiveTab(tab)}
           pendingTicketsCount={1}
           pendingContactCount={1}
         />
 
         <main style={{ flex: 1, padding: '1.75rem 2rem', overflowX: 'hidden' }}>
-          {safeTab === 'dashboard' && <DashboardView />}
-          {safeTab === 'food' && <FoodManagementView />}
-          {safeTab === 'inventory' && <InventoryView />}
-          {safeTab === 'orders' && <OrderManagementView userRole={user.role} />}
-          {safeTab === 'pos' && <PosView />}
-          {safeTab === 'fcfs' && <FcfsQueueView />}
-          {safeTab === 'contact' && <ContactOrdersView />}
-          {safeTab === 'users' && <UserManagementView />}
-          {safeTab === 'calendar' && <CalendarManager />}
-          {safeTab === 'payment-support' && <PaymentSupportView />}
-          {safeTab === 'analytics' && <AnalyticsView />}
-          {safeTab === 'settings' && <SystemSettingsView />}
+          {activeTab === 'dashboard' && <DashboardView />}
+          {activeTab === 'food' && <FoodManagementView />}
+          {activeTab === 'inventory' && <InventoryView />}
+          {activeTab === 'orders' && <OrderManagementView userRole={user.role} />}
+          {activeTab === 'pos' && <PosView />}
+          {activeTab === 'fcfs' && <FcfsQueueView />}
+          {activeTab === 'contact' && <ContactOrdersView />}
+          {activeTab === 'users' && <UserManagementView />}
+          {activeTab === 'calendar' && <CalendarManager />}
+          {activeTab === 'payment-support' && <PaymentSupportView />}
+          {activeTab === 'analytics' && <AnalyticsView />}
+          {activeTab === 'settings' && <SystemSettingsView />}
         </main>
       </div>
 
@@ -970,7 +1255,7 @@ export function App() {
               Confirm Sign Out
             </h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-              Are you sure you want to log out of the SAEC CAFÉ Management Portal?
+              Are you sure you want to log out of SAEC CAFÉ?
             </p>
 
             <div style={{ display: 'flex', gap: '0.75rem' }}>

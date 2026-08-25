@@ -46,12 +46,6 @@ export const UserManagementView: React.FC = () => {
     tempPassword: string;
   } | null>(null);
 
-  // Cashier Modal
-  const [isCashierModalOpen, setIsCashierModalOpen] = useState(false);
-  const [cashierFullName, setCashierFullName] = useState('');
-  const [cashierEmail, setCashierEmail] = useState('');
-  const [cashierMobile, setCashierMobile] = useState('');
-  const [cashierPassword, setCashierPassword] = useState('');
   const [modalError, setModalError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -131,40 +125,6 @@ export const UserManagementView: React.FC = () => {
     }
   };
 
-  const handleCreateCashier = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!cashierFullName.trim() || !cashierEmail.trim() || !cashierMobile.trim() || !cashierPassword.trim()) {
-      setModalError('Please fill in all cashier account fields');
-      return;
-    }
-    if (cashierPassword.length < 6) {
-      setModalError('Password must be at least 6 characters');
-      return;
-    }
-
-    setIsSubmitting(true);
-    setModalError('');
-
-    try {
-      await api.createCashier({
-        full_name: cashierFullName.trim(),
-        email: cashierEmail.trim(),
-        mobile_number: cashierMobile.trim(),
-        password: cashierPassword.trim()
-      });
-      setIsCashierModalOpen(false);
-      setCashierFullName('');
-      setCashierEmail('');
-      setCashierMobile('');
-      setCashierPassword('');
-      loadData();
-    } catch (err: any) {
-      setModalError(err.message || 'Failed to create cashier account');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -237,20 +197,12 @@ export const UserManagementView: React.FC = () => {
         <div style={{ display: 'flex', gap: '0.75rem' }}>
           <button
             onClick={loadData}
-            className="btn btn-secondary"
+            className="btn btn-primary"
             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
             title="Refresh Users"
           >
             <RefreshCw size={16} />
-            Refresh
-          </button>
-          <button
-            onClick={() => setIsCashierModalOpen(true)}
-            className="btn btn-primary"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-          >
-            <UserPlus size={16} />
-            New Cashier Account
+            Refresh User List
           </button>
         </div>
       </div>
@@ -962,115 +914,7 @@ export const UserManagementView: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL 5: Create Cashier Modal */}
-      {isCashierModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div style={{ background: '#ffffff', borderRadius: '20px', maxWidth: '480px', width: '100%', padding: '2rem', boxShadow: '0 25px 60px rgba(0,0,0,0.3)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#fff7ed', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <UserPlus size={24} />
-              </div>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                  Create Canteen Cashier
-                </h3>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                  Assign Counter POS and order verification authority
-                </div>
-              </div>
-            </div>
-
-            <form onSubmit={handleCreateCashier} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
-                  Full Name *
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. R. Murugan"
-                  value={cashierFullName}
-                  onChange={(e) => setCashierFullName(e.target.value)}
-                  className="input-field"
-                  style={{ width: '100%' }}
-                  required
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
-                  Institutional Email *
-                </label>
-                <input
-                  type="email"
-                  placeholder="e.g. cashier.counter1@saec.ac.in"
-                  value={cashierEmail}
-                  onChange={(e) => setCashierEmail(e.target.value)}
-                  className="input-field"
-                  style={{ width: '100%' }}
-                  required
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
-                  Mobile Phone *
-                </label>
-                <input
-                  type="tel"
-                  placeholder="e.g. 9876543210"
-                  value={cashierMobile}
-                  onChange={(e) => setCashierMobile(e.target.value)}
-                  className="input-field"
-                  style={{ width: '100%' }}
-                  required
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
-                  Password *
-                </label>
-                <input
-                  type="password"
-                  placeholder="Minimum 6 characters"
-                  value={cashierPassword}
-                  onChange={(e) => setCashierPassword(e.target.value)}
-                  className="input-field"
-                  style={{ width: '100%' }}
-                  required
-                />
-              </div>
-
-              {modalError && (
-                <div style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', padding: '0.75rem', borderRadius: '8px', fontSize: '0.85rem' }}>
-                  {modalError}
-                </div>
-              )}
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setIsCashierModalOpen(false)}
-                  className="btn btn-secondary"
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={isSubmitting}
-                  style={{ fontWeight: 700 }}
-                >
-                  {isSubmitting ? 'Creating...' : 'Create Cashier'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 6: Toggle Status Confirmation Modal */}
+      {/* MODAL 5: Toggle Status Confirmation Modal */}
       {confirmToggleUser && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
           <div style={{ background: '#ffffff', borderRadius: '20px', maxWidth: '440px', width: '100%', padding: '2rem', boxShadow: '0 25px 60px rgba(0,0,0,0.3)', textAlign: 'center' }}>

@@ -95,22 +95,18 @@ export const Navbar: React.FC<NavbarProps> = ({ user, businessStatus, onLogout, 
             <span>APP ORDERS CLOSED</span>
           )}
         </div>
-      </div>   {/* User Info & Interactive Role Switcher */}
-        {user ? (
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-            <button
-              onClick={() => setShowRoleMenu(!showRoleMenu)}
+      </div>        {user ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+            <div
               style={{
                 background: '#f8fafc',
                 border: '1px solid #e2e8f0',
                 padding: '0.45rem 0.9rem',
                 borderRadius: '10px',
-                cursor: 'pointer',
                 textAlign: 'right',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.6rem',
-                transition: 'all 0.2s ease'
+                gap: '0.6rem'
               }}
             >
               <div>
@@ -119,55 +115,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user, businessStatus, onLogout, 
                   <ShieldCheck size={12} color="#ea580c" /> {user.role}
                 </div>
               </div>
-              <ChevronDown size={14} color="#64748b" />
-            </button>
-
-            {/* Quick Switch Role Dropdown Menu */}
-            {showRoleMenu && (
-              <div style={{
-                position: 'absolute',
-                top: '115%',
-                right: '45px',
-                width: '270px',
-                background: '#ffffff',
-                border: '1px solid #e2e8f0',
-                borderRadius: '12px',
-                boxShadow: '0 10px 30px rgba(15, 23, 42, 0.12)',
-                padding: '0.5rem',
-                zIndex: 100
-              }}>
-                <div style={{ padding: '0.5rem 0.75rem', fontSize: '0.7rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Switch Test Role
-                </div>
-                {roles.map((r, i) => (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      setShowRoleMenu(false);
-                      if (onSwitchRole) onSwitchRole(r.email, r.pass);
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '0.55rem 0.75rem',
-                      textAlign: 'left',
-                      background: user.role === r.badge ? '#fff7ed' : 'transparent',
-                      border: 'none',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontSize: '0.8rem',
-                      fontWeight: user.role === r.badge ? 800 : 600,
-                      color: user.role === r.badge ? '#ea580c' : '#1e293b',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}
-                  >
-                    <span>{r.role}</span>
-                    <span className={`badge ${user.role === r.badge ? 'badge-indigo' : 'badge-emerald'}`} style={{ fontSize: '0.65rem' }}>{r.badge}</span>
-                  </button>
-                ))}
-              </div>
-            )}
+            </div>
 
             <button
               onClick={onLogout}

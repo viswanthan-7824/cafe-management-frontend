@@ -24,7 +24,8 @@ import {
   Phone,
   Mail,
   GraduationCap,
-  Briefcase
+  Briefcase,
+  LogOut
 } from 'lucide-react';
 
 interface CartItem {
@@ -559,6 +560,28 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
                   {cartCount}
                 </span>
               )}
+            </button>
+
+            <button
+              onClick={onLogout}
+              title="Sign out of account"
+              style={{
+                background: '#fef2f2',
+                border: '1px solid #fecaca',
+                color: '#ef4444',
+                padding: '0.6rem 0.85rem',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <LogOut size={16} />
+              <span className="desktop-nav-links">Logout</span>
             </button>
           </div>
         </div>

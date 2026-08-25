@@ -1167,11 +1167,81 @@ export function App() {
   // 3. STUDENT & FACULTY USER PORTAL
   if (user.role === 'STUDENT' || user.role === 'FACULTY') {
     return (
-      <StudentOrderingView
-        user={user}
-        businessStatus={businessStatus}
-        onLogout={() => setShowLogoutConfirm(true)}
-      />
+      <>
+        <StudentOrderingView
+          user={user}
+          businessStatus={businessStatus}
+          onLogout={() => setShowLogoutConfirm(true)}
+        />
+
+        {/* Logout Confirmation Modal */}
+        {showLogoutConfirm && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(15, 23, 42, 0.7)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+              padding: '1rem'
+            }}
+          >
+            <div
+              style={{
+                background: '#ffffff',
+                borderRadius: '20px',
+                maxWidth: '400px',
+                width: '100%',
+                padding: '2rem',
+                boxShadow: '0 25px 60px rgba(0,0,0,0.3)',
+                textAlign: 'center'
+              }}
+            >
+              <div
+                style={{
+                  width: '50px',
+                  height: '50px',
+                  borderRadius: '50%',
+                  background: '#fff7ed',
+                  color: 'var(--primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 1rem'
+                }}
+              >
+                <LogIn size={26} style={{ transform: 'rotate(180deg)' }} />
+              </div>
+
+              <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                Confirm Sign Out
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+                Are you sure you want to log out of SAEC CAFÉ?
+              </p>
+
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className="btn btn-secondary"
+                  style={{ flex: 1 }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="btn btn-primary"
+                  style={{ flex: 1, fontWeight: 700 }}
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 

@@ -729,7 +729,10 @@ export const UserManagementView: React.FC = () => {
 
             <div style={{ display: 'flex', gap: '0.75rem' }}>
               <button
-                onClick={() => copyToClipboard(`SAEC CAFÉ Login Credentials\nEmail: ${activationSuccessData.user.email}\nTemporary Password: ${activationSuccessData.tempPassword}\nPortal: https://cafe-management-frontend-kappa.vercel.app/`)}
+                onClick={() => {
+                  const portalUrl = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://saec-cafe.vercel.app';
+                  copyToClipboard(`SAEC CAFÉ Login Credentials\nEmail: ${activationSuccessData.user.email}\nTemporary Password: ${activationSuccessData.tempPassword}\nPortal: ${portalUrl}/`);
+                }}
                 className="btn btn-secondary"
                 style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
               >

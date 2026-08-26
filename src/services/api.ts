@@ -702,11 +702,16 @@ export const api = {
     return await res.json();
   },
 
-  async createProduct(productData: Partial<Product>): Promise<Product> {
+  async createProduct(productData: Partial<Product> | FormData): Promise<Product> {
+    const isFormData = productData instanceof FormData;
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (!isFormData) headers['Content-Type'] = 'application/json';
+
     const res = await fetch(`${API_BASE_URL}/products/`, {
       method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify(productData)
+      headers,
+      body: isFormData ? productData : JSON.stringify(productData)
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -715,11 +720,16 @@ export const api = {
     return await res.json();
   },
 
-  async updateProduct(id: number, productData: Partial<Product>): Promise<Product> {
+  async updateProduct(id: number, productData: Partial<Product> | FormData): Promise<Product> {
+    const isFormData = productData instanceof FormData;
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (!isFormData) headers['Content-Type'] = 'application/json';
+
     const res = await fetch(`${API_BASE_URL}/products/${id}/`, {
       method: 'PATCH',
-      headers: authHeaders(),
-      body: JSON.stringify(productData)
+      headers,
+      body: isFormData ? productData : JSON.stringify(productData)
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));

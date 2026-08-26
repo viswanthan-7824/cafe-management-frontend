@@ -5,13 +5,16 @@ export interface User {
   id: number;
   email: string;
   full_name: string;
+  college_id?: string;
   mobile_number: string;
   role: UserRole;
   status: UserAccountStatus;
   must_change_password: boolean;
   is_active: boolean;
   is_demo?: boolean;
+  google_sub?: string | null;
   created_at: string;
+  last_login?: string | null;
   activated_at?: string | null;
   activated_by?: number | null;
   activated_by_name?: string | null;

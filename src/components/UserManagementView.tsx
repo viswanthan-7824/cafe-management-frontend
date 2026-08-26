@@ -9,14 +9,19 @@ import {
   Clock,
   Shield,
   Eye,
-  Key,
-  Copy,
+  Edit2,
+  Trash2,
   Check,
   RefreshCw,
   UserCheck,
   UserX,
-  ChevronRight,
-  Filter
+  Filter,
+  Mail,
+  GraduationCap,
+  Briefcase,
+  Phone,
+  Hash,
+  X
 } from 'lucide-react';
 import { api } from '../services/api';
 import type { User, UserRole, UserAccountStatus, UserStats } from '../types';
@@ -36,22 +41,34 @@ export const UserManagementView: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // Modals
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [activateModalUser, setActivateModalUser] = useState<User | null>(null);
-  const [rejectModalUser, setRejectModalUser] = useState<User | null>(null);
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [customTempPassword, setCustomTempPassword] = useState('');
-  const [activationSuccessData, setActivationSuccessData] = useState<{
-    user: User;
-    tempPassword: string;
-  } | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [viewUser, setViewUser] = useState<User | null>(null);
+  const [deleteConfirmUser, setDeleteConfirmUser] = useState<User | null>(null);
+
+  // Form States for Add User
+  const [addFullName, setAddFullName] = useState('');
+  const [addEmail, setAddEmail] = useState('');
+  const [addRole, setAddRole] = useState<'STUDENT' | 'FACULTY'>('STUDENT');
+  const [addCollegeId, setAddCollegeId] = useState('');
+  const [addMobile, setAddMobile] = useState('');
+  const [addStatus, setAddStatus] = useState<UserAccountStatus>('ACTIVE');
+  const [addDepartment, setAddDepartment] = useState('Computer Science & Engineering');
+  const [addYear, setAddYear] = useState<number>(1);
+
+  // Form States for Edit User
+  const [editFullName, setEditFullName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editRole, setEditRole] = useState<UserRole>('STUDENT');
+  const [editCollegeId, setEditCollegeId] = useState('');
+  const [editMobile, setEditMobile] = useState('');
+  const [editStatus, setEditStatus] = useState<UserAccountStatus>('ACTIVE');
+  const [editDepartment, setEditDepartment] = useState('');
+  const [editYear, setEditYear] = useState<number>(1);
 
   const [modalError, setModalError] = useState('');
+  const [modalSuccess, setModalSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  // Toggle Confirm Modal
-  const [confirmToggleUser, setConfirmToggleUser] = useState<User | null>(null);
 
   useEffect(() => {
     loadData();
@@ -78,69 +95,129 @@ export const UserManagementView: React.FC = () => {
     loadData();
   };
 
-  const handleActivateSubmit = async () => {
-    if (!activateModalUser) return;
+  const handleOpenAddModal = () => {
+    setAddFullName('');
+    setAddEmail('');
+    setAddRole('STUDENT');
+    setAddCollegeId('');
+    setAddMobile('');
+    setAddStatus('ACTIVE');
+    setAddDepartment('Computer Science & Engineering');
+    setAddYear(1);
+    setModalError('');
+    setModalSuccess('');
+    setShowAddModal(true);
+  };
+
+  const handleAddUserSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addFullName.trim() || !addEmail.trim()) {
+      setModalError('Please enter full name and Google email.');
+      return;
+    }
+
     setIsSubmitting(true);
     setModalError('');
     try {
-      const res = await api.activateUser(activateModalUser.id, customTempPassword.trim() || undefined);
-      setActivateModalUser(null);
-      setCustomTempPassword('');
-      setActivationSuccessData({
-        user: res.user,
-        tempPassword: res.temporary_password
+      await api.createUser({
+        full_name: addFullName.trim(),
+        email: addEmail.trim().toLowerCase(),
+        role: addRole,
+        college_id: addCollegeId.trim(),
+        mobile_number: addMobile.trim(),
+        status: addStatus,
+        department: addDepartment.trim(),
+        year: addRole === 'STUDENT' ? Number(addYear) : undefined
       });
+
+      setShowAddModal(false);
       loadData();
     } catch (err: any) {
-      setModalError(err.message || 'Failed to activate account');
+      setModalError(err.message || 'Failed to create user account.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleRejectSubmit = async () => {
-    if (!rejectModalUser) return;
+  const handleOpenEditModal = (u: User) => {
+    setEditingUser(u);
+    setEditFullName(u.full_name || '');
+    setEditEmail(u.email || '');
+    setEditRole(u.role || 'STUDENT');
+    setEditCollegeId(u.college_id || u.student_profile?.register_number || u.faculty_profile?.staff_number || '');
+    setEditMobile(u.mobile_number || '');
+    setEditStatus(u.status || 'ACTIVE');
+    setEditDepartment(u.student_profile?.department || u.faculty_profile?.department || 'Computer Science & Engineering');
+    setEditYear(u.student_profile?.year || 1);
+    setModalError('');
+    setModalSuccess('');
+  };
+
+  const handleEditUserSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+
     setIsSubmitting(true);
     setModalError('');
     try {
-      await api.rejectUser(rejectModalUser.id, rejectionReason.trim());
-      setRejectModalUser(null);
-      setRejectionReason('');
+      await api.updateUser(editingUser.id, {
+        full_name: editFullName.trim(),
+        email: editEmail.trim().toLowerCase(),
+        role: editRole,
+        college_id: editCollegeId.trim(),
+        mobile_number: editMobile.trim(),
+        status: editStatus,
+        department: editDepartment.trim(),
+        year: editRole === 'STUDENT' ? Number(editYear) : undefined
+      });
+
+      setEditingUser(null);
       loadData();
     } catch (err: any) {
-      setModalError(err.message || 'Failed to reject account');
+      setModalError(err.message || 'Failed to update user.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleToggleStatus = async () => {
-    if (!confirmToggleUser) return;
+  const handleDirectActivate = async (userId: number) => {
     try {
-      await api.toggleUserStatus(confirmToggleUser.id);
-      setConfirmToggleUser(null);
+      await api.activateUser(userId);
+      loadData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to activate user account.');
+    }
+  };
+
+  const handleToggleStatus = async (userId: number, currentStatus: UserAccountStatus) => {
+    try {
+      const nextStatus = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+      await api.toggleUserStatus(userId, nextStatus);
       loadData();
     } catch (e: any) {
-      alert(e.message || 'Could not update user status');
+      alert(e.message || 'Could not update user status.');
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleDeleteUser = async () => {
+    if (!deleteConfirmUser) return;
+    try {
+      await api.deleteUser(deleteConfirmUser.id);
+      setDeleteConfirmUser(null);
+      loadData();
+    } catch (e: any) {
+      alert(e.message || 'Failed to delete user.');
+    }
   };
 
   const getRoleBadge = (role: UserRole) => {
     switch (role) {
       case 'ADMIN':
-        return <span className="badge badge-rose">🛡️ ADMIN</span>;
-      case 'CASHIER':
-        return <span className="badge badge-emerald">⚡ CASHIER</span>;
+        return <span className="badge badge-rose" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}><Shield size={12} /> ADMIN</span>;
       case 'FACULTY':
-        return <span className="badge badge-blue">👨‍🏫 FACULTY</span>;
+        return <span className="badge badge-blue" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}><Briefcase size={12} /> FACULTY</span>;
       case 'STUDENT':
-        return <span className="badge badge-purple">🎓 STUDENT</span>;
+        return <span className="badge badge-purple" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}><GraduationCap size={12} /> STUDENT</span>;
       default:
         return <span className="badge">{role}</span>;
     }
@@ -188,21 +265,29 @@ export const UserManagementView: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)' }}>
-            User Management & Access Control
+            User Authorization & Google Accounts
           </h1>
           <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            Authorize accounts, review pending registrations, generate temporary credentials, and manage institutional roles.
+            Add student & faculty accounts. Only accounts added with a verified Google email can authenticate via "Continue with Google".
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
           <button
-            onClick={loadData}
+            onClick={handleOpenAddModal}
             className="btn btn-primary"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700 }}
+          >
+            <UserPlus size={18} />
+            Add User
+          </button>
+          <button
+            onClick={loadData}
+            className="btn btn-secondary"
             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
             title="Refresh Users"
           >
             <RefreshCw size={16} />
-            Refresh User List
+            Refresh
           </button>
         </div>
       </div>
@@ -222,32 +307,11 @@ export const UserManagementView: React.FC = () => {
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Total Users</span>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Total Accounts</span>
             <Users size={20} color="var(--primary)" />
           </div>
           <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '0.5rem' }}>
             {stats.total_users}
-          </div>
-        </div>
-
-        <div
-          onClick={() => setStatusFilter('PENDING')}
-          style={{
-            background: stats.pending_users > 0 ? '#fffbeb' : '#ffffff',
-            padding: '1.25rem',
-            borderRadius: '16px',
-            border: statusFilter === 'PENDING' ? '2px solid #f59e0b' : '1px solid ' + (stats.pending_users > 0 ? '#fde68a' : 'var(--border)'),
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-            transition: 'all 0.2s'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: stats.pending_users > 0 ? '#b45309' : 'var(--text-muted)' }}>Pending Approval</span>
-            <Clock size={20} color="#f59e0b" />
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: stats.pending_users > 0 ? '#b45309' : 'var(--text-main)', marginTop: '0.5rem' }}>
-            {stats.pending_users}
           </div>
         </div>
 
@@ -273,6 +337,27 @@ export const UserManagementView: React.FC = () => {
         </div>
 
         <div
+          onClick={() => setStatusFilter('PENDING')}
+          style={{
+            background: stats.pending_users > 0 ? '#fffbeb' : '#ffffff',
+            padding: '1.25rem',
+            borderRadius: '16px',
+            border: statusFilter === 'PENDING' ? '2px solid #f59e0b' : '1px solid ' + (stats.pending_users > 0 ? '#fde68a' : 'var(--border)'),
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+            transition: 'all 0.2s'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: stats.pending_users > 0 ? '#b45309' : 'var(--text-muted)' }}>Pending Activation</span>
+            <Clock size={20} color="#f59e0b" />
+          </div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: stats.pending_users > 0 ? '#b45309' : 'var(--text-main)', marginTop: '0.5rem' }}>
+            {stats.pending_users}
+          </div>
+        </div>
+
+        <div
           onClick={() => setStatusFilter('INACTIVE')}
           style={{
             background: '#ffffff',
@@ -285,673 +370,712 @@ export const UserManagementView: React.FC = () => {
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Inactive</span>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Inactive Accounts</span>
             <UserX size={20} color="#64748b" />
           </div>
           <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#475569', marginTop: '0.5rem' }}>
             {stats.inactive_users}
           </div>
         </div>
-
-        <div
-          onClick={() => setStatusFilter('REJECTED')}
-          style={{
-            background: '#ffffff',
-            padding: '1.25rem',
-            borderRadius: '16px',
-            border: statusFilter === 'REJECTED' ? '2px solid #ef4444' : '1px solid var(--border)',
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-            transition: 'all 0.2s'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Rejected</span>
-            <XCircle size={20} color="#ef4444" />
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#b91c1c', marginTop: '0.5rem' }}>
-            {stats.rejected_users}
-          </div>
-        </div>
       </div>
 
-      {/* Prominent Pending Notice Banner if pending users exist */}
-      {stats.pending_users > 0 && statusFilter !== 'PENDING' && (
-        <div
-          style={{
-            background: 'linear-gradient(90deg, #fff7ed 0%, #ffedd5 100%)',
-            border: '1.5px solid #fed7aa',
-            borderRadius: '16px',
-            padding: '1rem 1.5rem',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '1rem'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#ea580c', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Clock size={22} />
-            </div>
-            <div>
-              <div style={{ fontWeight: 800, color: '#9a3412', fontSize: '1rem' }}>
-                {stats.pending_users} Registration{stats.pending_users > 1 ? 's' : ''} Awaiting Admin Approval
-              </div>
-              <div style={{ fontSize: '0.85rem', color: '#c2410c' }}>
-                New students/faculty have registered and are waiting for account verification and temporary password generation.
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={() => setStatusFilter('PENDING')}
-            className="btn btn-primary"
-            style={{ padding: '0.5rem 1.25rem', fontSize: '0.85rem', fontWeight: 700 }}
-          >
-            Review Pending ({stats.pending_users})
-          </button>
-        </div>
-      )}
-
       {/* Filter and Search Bar */}
-      <div style={{ background: '#ffffff', padding: '1.25rem', borderRadius: '16px', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        
-        {/* Status Filter Tabs */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}>
-          {[
-            { id: 'ALL', label: 'All Users' },
-            { id: 'PENDING', label: `Pending Approval (${stats.pending_users})` },
-            { id: 'ACTIVE', label: `Active (${stats.active_users})` },
-            { id: 'INACTIVE', label: `Inactive (${stats.inactive_users})` },
-            { id: 'REJECTED', label: `Rejected (${stats.rejected_users})` },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setStatusFilter(tab.id)}
-              style={{
-                background: statusFilter === tab.id ? 'var(--primary-light)' : 'transparent',
-                color: statusFilter === tab.id ? 'var(--primary)' : 'var(--text-muted)',
-                border: statusFilter === tab.id ? '1px solid var(--primary-border)' : '1px solid transparent',
-                borderRadius: '8px',
-                padding: '0.45rem 0.9rem',
-                fontSize: '0.85rem',
-                fontWeight: statusFilter === tab.id ? 700 : 500,
-                cursor: 'pointer',
-                transition: 'all 0.15s'
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Search & Role Controls */}
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <form onSubmit={handleSearchSubmit} style={{ flex: 1, minWidth: '280px', position: 'relative' }}>
-            <input
-              type="text"
-              placeholder="Search by name, email, register number, staff ID, or phone..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="input-field"
-              style={{ paddingLeft: '2.5rem', width: '100%' }}
-            />
-            <Search size={18} style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
-          </form>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <div
+        style={{
+          background: '#ffffff',
+          padding: '1rem 1.25rem',
+          borderRadius: '16px',
+          border: '1px solid var(--border)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '1rem'
+        }}
+      >
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          {/* Status Filter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <Filter size={16} color="var(--text-muted)" />
+            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)' }}>Status:</span>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="input-field"
+              style={{ padding: '0.45rem 0.85rem', fontSize: '0.85rem' }}
+            >
+              <option value="ALL">All Statuses</option>
+              <option value="ACTIVE">Active</option>
+              <option value="PENDING">Pending Approval</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
+          </div>
+
+          {/* Role Filter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)' }}>Role:</span>
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
               className="input-field"
-              style={{ width: 'auto', minWidth: '160px', padding: '0.5rem 0.85rem' }}
+              style={{ padding: '0.45rem 0.85rem', fontSize: '0.85rem' }}
             >
               <option value="ALL">All Roles</option>
-              <option value="ADMIN">Administrators</option>
-              <option value="CASHIER">Cashiers</option>
-              <option value="FACULTY">Faculty / Staff</option>
-              <option value="STUDENT">Students</option>
+              <option value="STUDENT">Student</option>
+              <option value="FACULTY">Faculty</option>
+              <option value="ADMIN">Administrator</option>
             </select>
           </div>
         </div>
+
+        {/* Search Query */}
+        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '0.5rem', minWidth: '280px', flex: '1', maxWidth: '420px' }}>
+          <div style={{ position: 'relative', width: '100%' }}>
+            <input
+              type="text"
+              placeholder="Search by name, Google email, College ID, phone..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="input-field"
+              style={{ width: '100%', paddingLeft: '2.4rem' }}
+            />
+            <Search size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+          </div>
+          <button type="submit" className="btn btn-secondary" style={{ padding: '0 1rem' }}>
+            Search
+          </button>
+        </form>
       </div>
 
       {/* Users Table */}
-      <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid var(--border)', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-        {loading ? (
-          <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-            <RefreshCw size={28} className="animate-spin" style={{ margin: '0 auto 0.75rem', color: 'var(--primary)' }} />
-            Loading accounts database...
-          </div>
-        ) : users.length === 0 ? (
-          <div style={{ padding: '3.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-            <Users size={40} style={{ margin: '0 auto 1rem', color: 'var(--text-dim)' }} />
-            <div style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-main)' }}>No users found</div>
-            <div style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>Try adjusting your search query or status filter.</div>
-          </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
-              <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--border)', color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  <th style={{ padding: '0.85rem 1.25rem' }}>User & Contact</th>
-                  <th style={{ padding: '0.85rem 1rem' }}>Role</th>
-                  <th style={{ padding: '0.85rem 1rem' }}>Institutional ID</th>
-                  <th style={{ padding: '0.85rem 1rem' }}>Account Status</th>
-                  <th style={{ padding: '0.85rem 1rem' }}>Registered</th>
-                  <th style={{ padding: '0.85rem 1.25rem', textAlign: 'right' }}>Actions</th>
+      <div
+        style={{
+          background: '#ffffff',
+          borderRadius: '16px',
+          border: '1px solid var(--border)',
+          overflow: 'hidden',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+        }}
+      >
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--border)' }}>
+                <th style={{ padding: '0.9rem 1.25rem', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                  User / Name
+                </th>
+                <th style={{ padding: '0.9rem 1.25rem', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                  Google Email
+                </th>
+                <th style={{ padding: '0.9rem 1.25rem', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                  Role
+                </th>
+                <th style={{ padding: '0.9rem 1.25rem', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                  College ID
+                </th>
+                <th style={{ padding: '0.9rem 1.25rem', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                  Status
+                </th>
+                <th style={{ padding: '0.9rem 1.25rem', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                  Last Login
+                </th>
+                <th style={{ padding: '0.9rem 1.25rem', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'right' }}>
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={7} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    <RefreshCw size={24} className="animate-spin" style={{ margin: '0 auto 0.5rem' }} />
+                    <div>Loading accounts...</div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {users.map((u) => {
-                  const isPending = u.status === 'PENDING';
-                  const isActive = u.status === 'ACTIVE' && u.is_active;
-                  const isInactive = u.status === 'INACTIVE' || (!u.is_active && u.status !== 'REJECTED');
-                  const isRejected = u.status === 'REJECTED';
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan={7} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    <Users size={32} style={{ margin: '0 auto 0.5rem', opacity: 0.5 }} />
+                    <div style={{ fontWeight: 700 }}>No accounts found</div>
+                    <div style={{ fontSize: '0.85rem' }}>Try adjusting your filters or click "Add User" to add a new account.</div>
+                  </td>
+                </tr>
+              ) : (
+                users.map((u) => {
+                  const collegeId = u.college_id || u.student_profile?.register_number || u.faculty_profile?.staff_number || '—';
+                  const initials = u.full_name
+                    ? u.full_name
+                        .split(' ')
+                        .map((n) => n[0])
+                        .join('')
+                        .substring(0, 2)
+                        .toUpperCase()
+                    : 'U';
 
                   return (
                     <tr
                       key={u.id}
                       style={{
-                        borderBottom: '1px solid var(--border)',
-                        background: isPending ? '#fffdfa' : 'transparent',
+                        borderBottom: '1px solid #f1f5f9',
                         transition: 'background 0.15s'
                       }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = '#fafafa')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                     >
+                      {/* Name & Avatar */}
                       <td style={{ padding: '1rem 1.25rem' }}>
-                        <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.95rem' }}>
-                          {u.full_name}
-                        </div>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                          {u.email}
-                        </div>
-                        <div style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>
-                          📞 {u.mobile_number}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <div
+                            style={{
+                              width: '36px',
+                              height: '36px',
+                              borderRadius: '50%',
+                              background: u.role === 'ADMIN' ? '#ffe4e6' : u.role === 'FACULTY' ? '#dbeafe' : '#f3e8ff',
+                              color: u.role === 'ADMIN' ? '#e11d48' : u.role === 'FACULTY' ? '#2563eb' : '#7e22ce',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 800,
+                              fontSize: '0.85rem',
+                              flexShrink: 0
+                            }}
+                          >
+                            {initials}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.9rem' }}>
+                              {u.full_name}
+                            </div>
+                            {u.mobile_number && (
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                <Phone size={11} /> {u.mobile_number}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </td>
 
-                      <td style={{ padding: '1rem 1rem' }}>
+                      {/* Google Email */}
+                      <td style={{ padding: '1rem 1.25rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 600, color: '#1e293b', fontSize: '0.88rem' }}>
+                          <Mail size={14} color="#ea580c" />
+                          <span>{u.email}</span>
+                        </div>
+                        {u.google_sub && (
+                          <div style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600, marginTop: '2px' }}>
+                            ✓ Google OAuth Bound
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Role */}
+                      <td style={{ padding: '1rem 1.25rem' }}>
                         {getRoleBadge(u.role)}
                       </td>
 
-                      <td style={{ padding: '1rem 1rem', fontSize: '0.85rem', color: 'var(--text-main)' }}>
-                        {u.student_profile ? (
-                          <div>
-                            <span style={{ fontWeight: 600 }}>{u.student_profile.register_number}</span>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                              {u.student_profile.department} (Yr {u.student_profile.year})
-                            </div>
+                      {/* College ID */}
+                      <td style={{ padding: '1rem 1.25rem' }}>
+                        <div style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '0.85rem', color: '#334155' }}>
+                          {collegeId}
+                        </div>
+                        {u.student_profile?.department && (
+                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                            {u.student_profile.department} (Yr {u.student_profile.year})
                           </div>
-                        ) : u.faculty_profile ? (
-                          <div>
-                            <span style={{ fontWeight: 600 }}>{u.faculty_profile.staff_number}</span>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                              {u.faculty_profile.department}
-                            </div>
+                        )}
+                        {u.faculty_profile?.department && (
+                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                            {u.faculty_profile.department}
                           </div>
-                        ) : (
-                          <span style={{ color: 'var(--text-dim)' }}>—</span>
                         )}
                       </td>
 
-                      <td style={{ padding: '1rem 1rem' }}>
+                      {/* Status */}
+                      <td style={{ padding: '1rem 1.25rem' }}>
                         {getStatusBadge(u.status)}
-                        {u.must_change_password && isActive && (
-                          <div style={{ marginTop: '0.25rem', fontSize: '0.7rem', color: '#ea580c', fontWeight: 600 }}>
-                            🔑 Temp Pwd Active
-                          </div>
-                        )}
                       </td>
 
-                      <td style={{ padding: '1rem 1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                        {new Date(u.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      {/* Last Login */}
+                      <td style={{ padding: '1rem 1.25rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        {u.last_login
+                          ? new Date(u.last_login).toLocaleString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })
+                          : 'Never logged in'}
                       </td>
 
+                      {/* Actions */}
                       <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', gap: '0.5rem', alignItems: 'center' }}>
-                          
-                          {/* View Details */}
-                          <button
-                            onClick={() => setSelectedUser(u)}
-                            className="btn btn-secondary"
-                            style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
-                            title="View Full Profile"
-                          >
-                            <Eye size={14} />
-                            Details
-                          </button>
-
-                          {/* Actions for PENDING accounts */}
-                          {isPending && (
-                            <>
-                              <button
-                                onClick={() => {
-                                  setActivateModalUser(u);
-                                  setModalError('');
-                                  setCustomTempPassword('');
-                                }}
-                                className="btn btn-primary"
-                                style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', fontWeight: 700 }}
-                              >
-                                <CheckCircle2 size={14} />
-                                Activate
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setRejectModalUser(u);
-                                  setRejectionReason('');
-                                  setModalError('');
-                                }}
-                                style={{
-                                  background: '#fee2e2',
-                                  color: '#b91c1c',
-                                  border: '1px solid #fca5a5',
-                                  padding: '0.35rem 0.65rem',
-                                  borderRadius: '8px',
-                                  fontSize: '0.75rem',
-                                  fontWeight: 600,
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                Reject
-                              </button>
-                            </>
+                        <div style={{ display: 'inline-flex', gap: '0.4rem', alignItems: 'center' }}>
+                          {/* Activate Button (if pending or inactive) */}
+                          {u.status !== 'ACTIVE' && (
+                            <button
+                              onClick={() => handleDirectActivate(u.id)}
+                              className="btn btn-primary"
+                              style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', fontWeight: 700, background: '#10b981', borderColor: '#10b981' }}
+                              title="Activate User"
+                            >
+                              <Check size={13} /> Activate
+                            </button>
                           )}
 
-                          {/* Actions for ACTIVE accounts */}
-                          {isActive && u.role !== 'ADMIN' && (
+                          {/* Deactivate Button (if active and not admin) */}
+                          {u.status === 'ACTIVE' && u.role !== 'ADMIN' && (
                             <button
-                              onClick={() => setConfirmToggleUser(u)}
-                              style={{
-                                background: '#f8fafc',
-                                color: '#475569',
-                                border: '1px solid #cbd5e1',
-                                padding: '0.35rem 0.65rem',
-                                borderRadius: '8px',
-                                fontSize: '0.75rem',
-                                fontWeight: 600,
-                                cursor: 'pointer'
-                              }}
+                              onClick={() => handleToggleStatus(u.id, u.status)}
+                              className="btn btn-secondary"
+                              style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', color: '#dc2626', borderColor: '#fca5a5' }}
+                              title="Deactivate User"
                             >
                               Deactivate
                             </button>
                           )}
 
-                          {/* Actions for INACTIVE accounts */}
-                          {isInactive && (
-                            <button
-                              onClick={() => setConfirmToggleUser(u)}
-                              style={{
-                                background: '#ecfdf5',
-                                color: '#047857',
-                                border: '1px solid #a7f3d0',
-                                padding: '0.35rem 0.65rem',
-                                borderRadius: '8px',
-                                fontSize: '0.75rem',
-                                fontWeight: 700,
-                                cursor: 'pointer'
-                              }}
-                            >
-                              Reactivate
-                            </button>
-                          )}
+                          {/* Edit Button */}
+                          <button
+                            onClick={() => handleOpenEditModal(u)}
+                            className="btn btn-secondary"
+                            style={{ padding: '0.4rem', color: '#475569' }}
+                            title="Edit User"
+                          >
+                            <Edit2 size={15} />
+                          </button>
 
-                          {/* Actions for REJECTED accounts */}
-                          {isRejected && (
+                          {/* Delete Button */}
+                          {u.role !== 'ADMIN' && (
                             <button
-                              onClick={() => {
-                                setActivateModalUser(u);
-                                setModalError('');
-                                setCustomTempPassword('');
-                              }}
+                              onClick={() => setDeleteConfirmUser(u)}
                               className="btn btn-secondary"
-                              style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
+                              style={{ padding: '0.4rem', color: '#ef4444', borderColor: '#fee2e2' }}
+                              title="Delete User"
                             >
-                              Re-review & Activate
+                              <Trash2 size={15} />
                             </button>
                           )}
                         </div>
                       </td>
                     </tr>
                   );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* MODAL 1: Account Activation Confirmation Modal */}
-      {activateModalUser && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div style={{ background: '#ffffff', borderRadius: '20px', maxWidth: '520px', width: '100%', padding: '2rem', boxShadow: '0 25px 60px rgba(0,0,0,0.3)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#ecfdf5', color: '#047857', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <UserCheck size={24} />
-              </div>
+      {/* ==================== ADD USER MODAL ==================== */}
+      {showAddModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '560px', width: '95%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                  Activate Account & Issue Credentials
+                <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                  Add Student / Faculty Account
                 </h3>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                  Authorizing {activateModalUser.full_name}
-                </div>
+                <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  Create authorized user profile with verified Google login identity.
+                </p>
               </div>
-            </div>
-
-            <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border)', marginBottom: '1.25rem', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-              <div><strong>Email:</strong> {activateModalUser.email}</div>
-              <div><strong>Role:</strong> {activateModalUser.role}</div>
-              <div><strong>Mobile:</strong> {activateModalUser.mobile_number}</div>
-              {activateModalUser.student_profile && (
-                <div><strong>Reg Number:</strong> {activateModalUser.student_profile.register_number} ({activateModalUser.student_profile.department})</div>
-              )}
-              {activateModalUser.faculty_profile && (
-                <div><strong>Staff ID:</strong> {activateModalUser.faculty_profile.staff_number} ({activateModalUser.faculty_profile.department})</div>
-              )}
-            </div>
-
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '1.25rem' }}>
-              Activating this account will allow the user to log in. A secure temporary password will be assigned, and the user will be <strong>required to create their own new password</strong> on their first login.
-            </p>
-
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
-                Custom Temporary Password (Optional)
-              </label>
-              <input
-                type="text"
-                placeholder="Leave blank for auto-generated (e.g. SaecCafe@8291)"
-                value={customTempPassword}
-                onChange={(e) => setCustomTempPassword(e.target.value)}
-                className="input-field"
-                style={{ width: '100%' }}
-              />
+              <button
+                onClick={() => setShowAddModal(false)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+              >
+                <X size={20} />
+              </button>
             </div>
 
             {modalError && (
-              <div style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', padding: '0.75rem', borderRadius: '8px', fontSize: '0.85rem', marginBottom: '1rem' }}>
-                {modalError}
+              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '0.75rem', color: '#b91c1c', fontSize: '0.82rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <AlertTriangle size={16} />
+                <span>{modalError}</span>
               </div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-              <button
-                type="button"
-                onClick={() => setActivateModalUser(null)}
-                className="btn btn-secondary"
-                disabled={isSubmitting}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleActivateSubmit}
-                className="btn btn-primary"
-                disabled={isSubmitting}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700 }}
-              >
-                {isSubmitting ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                {isSubmitting ? 'Activating...' : 'Confirm & Activate'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 2: Activation Success & Temporary Password Display Modal */}
-      {activationSuccessData && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div style={{ background: '#ffffff', borderRadius: '20px', maxWidth: '480px', width: '100%', padding: '2rem', boxShadow: '0 25px 60px rgba(0,0,0,0.3)', textAlign: 'center' }}>
-            <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#ecfdf5', color: '#047857', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
-              <CheckCircle2 size={32} />
-            </div>
-
-            <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)' }}>
-              Account Activated Successfully!
-            </h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-              The account for <strong>{activationSuccessData.user.full_name}</strong> is now active. Share this temporary password with the user.
-            </p>
-
-            <div style={{ background: '#f8fafc', border: '1.5px dashed var(--primary-border)', borderRadius: '12px', padding: '1.25rem', marginBottom: '1.5rem' }}>
-              <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
-                Temporary Login Password
-              </div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.05em', fontFamily: 'monospace' }}>
-                {activationSuccessData.tempPassword}
-              </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
-                User will be required to change this upon their first login.
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button
-                onClick={() => {
-                  const portalUrl = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://saec-cafe.vercel.app';
-                  copyToClipboard(`SAEC CAFÉ Login Credentials\nEmail: ${activationSuccessData.user.email}\nTemporary Password: ${activationSuccessData.tempPassword}\nPortal: ${portalUrl}/`);
-                }}
-                className="btn btn-secondary"
-                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-              >
-                {copied ? <Check size={16} color="#10b981" /> : <Copy size={16} />}
-                {copied ? 'Copied!' : 'Copy Credentials'}
-              </button>
-              <button
-                onClick={() => setActivationSuccessData(null)}
-                className="btn btn-primary"
-                style={{ flex: 1 }}
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 3: Rejection Modal */}
-      {rejectModalUser && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div style={{ background: '#ffffff', borderRadius: '20px', maxWidth: '480px', width: '100%', padding: '2rem', boxShadow: '0 25px 60px rgba(0,0,0,0.3)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#fee2e2', color: '#b91c1c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <XCircle size={24} />
-              </div>
+            <form onSubmit={handleAddUserSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {/* Full Name */}
               <div>
-                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#991b1b' }}>
-                  Reject Registration
-                </h3>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                  {rejectModalUser.full_name} ({rejectModalUser.email})
+                <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Viswanthan T"
+                  value={addFullName}
+                  onChange={(e) => setAddFullName(e.target.value)}
+                  className="input-field"
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              {/* Google Email */}
+              <div>
+                <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                  Google Email Address *
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder="e.g. student@gmail.com"
+                  value={addEmail}
+                  onChange={(e) => setAddEmail(e.target.value)}
+                  className="input-field"
+                  style={{ width: '100%' }}
+                />
+                <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '0.3rem' }}>
+                  🔒 This Google email address will be the user's login identity for "Continue with Google".
                 </div>
               </div>
-            </div>
 
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '1.25rem' }}>
-              Are you sure you want to reject this registration? The user will not be permitted to log in.
-            </p>
+              {/* Role & Status */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                    Role *
+                  </label>
+                  <select
+                    value={addRole}
+                    onChange={(e) => setAddRole(e.target.value as 'STUDENT' | 'FACULTY')}
+                    className="input-field"
+                    style={{ width: '100%' }}
+                  >
+                    <option value="STUDENT">Student</option>
+                    <option value="FACULTY">Faculty / Staff</option>
+                  </select>
+                </div>
 
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
-                Rejection Reason (Optional)
-              </label>
-              <textarea
-                rows={3}
-                placeholder="e.g. Invalid student register number / Unverified institutional email"
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                className="input-field"
-                style={{ width: '100%', resize: 'none' }}
-              />
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                    Initial Status *
+                  </label>
+                  <select
+                    value={addStatus}
+                    onChange={(e) => setAddStatus(e.target.value as UserAccountStatus)}
+                    className="input-field"
+                    style={{ width: '100%' }}
+                  >
+                    <option value="ACTIVE">Active (Allowed Login)</option>
+                    <option value="PENDING">Pending (Approval Required)</option>
+                    <option value="INACTIVE">Inactive (Access Blocked)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* College ID & Mobile */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                    {addRole === 'STUDENT' ? 'Register Number / College ID' : 'Staff Number / Faculty ID'}
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={addRole === 'STUDENT' ? 'e.g. 912821104001 / SAEC12345' : 'e.g. SAEC-FAC-042'}
+                    value={addCollegeId}
+                    onChange={(e) => setAddCollegeId(e.target.value)}
+                    className="input-field"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                    Mobile Phone (Optional)
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="9876543210"
+                    value={addMobile}
+                    onChange={(e) => setAddMobile(e.target.value)}
+                    className="input-field"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              </div>
+
+              {/* Department & Year */}
+              <div style={{ display: 'grid', gridTemplateColumns: addRole === 'STUDENT' ? '2fr 1fr' : '1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                    Department
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Computer Science & Engineering"
+                    value={addDepartment}
+                    onChange={(e) => setAddDepartment(e.target.value)}
+                    className="input-field"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                {addRole === 'STUDENT' && (
+                  <div>
+                    <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                      Year
+                    </label>
+                    <select
+                      value={addYear}
+                      onChange={(e) => setAddYear(Number(e.target.value))}
+                      className="input-field"
+                      style={{ width: '100%' }}
+                    >
+                      <option value={1}>1st Year</option>
+                      <option value={2}>2nd Year</option>
+                      <option value={3}>3rd Year</option>
+                      <option value={4}>4th Year</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="btn btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="btn btn-primary"
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}
+                >
+                  {isSubmitting ? <RefreshCw size={16} className="animate-spin" /> : <UserPlus size={16} />}
+                  {isSubmitting ? 'Creating Account...' : 'Save & Authorize User'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== EDIT USER MODAL ==================== */}
+      {editingUser && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '560px', width: '95%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                  Edit User: {editingUser.full_name}
+                </h3>
+                <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  Update user profile, status, or authorized Google email.
+                </p>
+              </div>
+              <button
+                onClick={() => setEditingUser(null)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+              >
+                <X size={20} />
+              </button>
             </div>
 
             {modalError && (
-              <div style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', padding: '0.75rem', borderRadius: '8px', fontSize: '0.85rem', marginBottom: '1rem' }}>
-                {modalError}
+              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '0.75rem', color: '#b91c1c', fontSize: '0.82rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <AlertTriangle size={16} />
+                <span>{modalError}</span>
               </div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+            <form onSubmit={handleEditUserSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {/* Full Name */}
+              <div>
+                <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editFullName}
+                  onChange={(e) => setEditFullName(e.target.value)}
+                  className="input-field"
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              {/* Google Email */}
+              <div>
+                <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                  Registered Google Email *
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  className="input-field"
+                  style={{ width: '100%' }}
+                />
+                {editEmail.trim().toLowerCase() !== editingUser.email.toLowerCase() && (
+                  <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '0.5rem 0.75rem', marginTop: '0.4rem', fontSize: '0.75rem', color: '#b45309' }}>
+                    ⚠️ Changing the registered Google email will update the user's login identity. The previous email ({editingUser.email}) will no longer be authorized.
+                  </div>
+                )}
+              </div>
+
+              {/* Role & Status */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                    Role *
+                  </label>
+                  <select
+                    value={editRole}
+                    onChange={(e) => setEditRole(e.target.value as UserRole)}
+                    className="input-field"
+                    style={{ width: '100%' }}
+                  >
+                    <option value="STUDENT">Student</option>
+                    <option value="FACULTY">Faculty / Staff</option>
+                    <option value="ADMIN">Administrator</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                    Account Status *
+                  </label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value as UserAccountStatus)}
+                    className="input-field"
+                    style={{ width: '100%' }}
+                  >
+                    <option value="ACTIVE">Active (Allowed Login)</option>
+                    <option value="PENDING">Pending (Approval Required)</option>
+                    <option value="INACTIVE">Inactive (Access Blocked)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* College ID & Mobile */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                    College ID / Register No.
+                  </label>
+                  <input
+                    type="text"
+                    value={editCollegeId}
+                    onChange={(e) => setEditCollegeId(e.target.value)}
+                    className="input-field"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                    Mobile Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={editMobile}
+                    onChange={(e) => setEditMobile(e.target.value)}
+                    className="input-field"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              </div>
+
+              {/* Department & Year */}
+              <div style={{ display: 'grid', gridTemplateColumns: editRole === 'STUDENT' ? '2fr 1fr' : '1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                    Department
+                  </label>
+                  <input
+                    type="text"
+                    value={editDepartment}
+                    onChange={(e) => setEditDepartment(e.target.value)}
+                    className="input-field"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                {editRole === 'STUDENT' && (
+                  <div>
+                    <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                      Year
+                    </label>
+                    <select
+                      value={editYear}
+                      onChange={(e) => setEditYear(Number(e.target.value))}
+                      className="input-field"
+                      style={{ width: '100%' }}
+                    >
+                      <option value={1}>1st Year</option>
+                      <option value={2}>2nd Year</option>
+                      <option value={3}>3rd Year</option>
+                      <option value={4}>4th Year</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  className="btn btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="btn btn-primary"
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}
+                >
+                  {isSubmitting ? <RefreshCw size={16} className="animate-spin" /> : <Check size={16} />}
+                  {isSubmitting ? 'Saving Changes...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== DELETE CONFIRMATION MODAL ==================== */}
+      {deleteConfirmUser && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '440px' }}>
+            <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#fee2e2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.75rem' }}>
+                <Trash2 size={24} />
+              </div>
+              <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                Delete User Account?
+              </h3>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                Are you sure you want to permanently delete <strong>{deleteConfirmUser.full_name}</strong> ({deleteConfirmUser.email})? This user will no longer be able to log in.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem' }}>
               <button
                 type="button"
-                onClick={() => setRejectModalUser(null)}
+                onClick={() => setDeleteConfirmUser(null)}
                 className="btn btn-secondary"
-                disabled={isSubmitting}
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={handleRejectSubmit}
-                style={{
-                  background: '#dc2626',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '10px',
-                  padding: '0.6rem 1.25rem',
-                  fontWeight: 700,
-                  cursor: 'pointer'
-                }}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Rejecting...' : 'Confirm Rejection'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 4: User Details Modal */}
-      {selectedUser && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div style={{ background: '#ffffff', borderRadius: '20px', maxWidth: '540px', width: '100%', padding: '2rem', boxShadow: '0 25px 60px rgba(0,0,0,0.3)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                  <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                    {selectedUser.full_name}
-                  </h3>
-                  {getRoleBadge(selectedUser.role)}
-                </div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                  {selectedUser.email}
-                </div>
-              </div>
-              {getStatusBadge(selectedUser.status)}
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-              <div>
-                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.75rem', textTransform: 'uppercase' }}>Mobile Phone</span>
-                <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{selectedUser.mobile_number}</span>
-              </div>
-              <div>
-                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.75rem', textTransform: 'uppercase' }}>Registered Date</span>
-                <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>
-                  {new Date(selectedUser.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                </span>
-              </div>
-
-              {selectedUser.student_profile && (
-                <>
-                  <div>
-                    <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.75rem', textTransform: 'uppercase' }}>Student Register No</span>
-                    <span style={{ fontWeight: 700, color: 'var(--primary)' }}>{selectedUser.student_profile.register_number}</span>
-                  </div>
-                  <div>
-                    <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.75rem', textTransform: 'uppercase' }}>Department & Year</span>
-                    <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{selectedUser.student_profile.department} (Year {selectedUser.student_profile.year})</span>
-                  </div>
-                </>
-              )}
-
-              {selectedUser.faculty_profile && (
-                <>
-                  <div>
-                    <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.75rem', textTransform: 'uppercase' }}>Faculty Staff ID</span>
-                    <span style={{ fontWeight: 700, color: 'var(--primary)' }}>{selectedUser.faculty_profile.staff_number}</span>
-                  </div>
-                  <div>
-                    <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.75rem', textTransform: 'uppercase' }}>Department</span>
-                    <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{selectedUser.faculty_profile.department}</span>
-                  </div>
-                </>
-              )}
-
-              {selectedUser.activated_at && (
-                <div>
-                  <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.75rem', textTransform: 'uppercase' }}>Activated On</span>
-                  <span style={{ fontWeight: 600, color: '#047857' }}>
-                    {new Date(selectedUser.activated_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                  </span>
-                </div>
-              )}
-
-              {selectedUser.activated_by_name && (
-                <div>
-                  <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.75rem', textTransform: 'uppercase' }}>Activated By</span>
-                  <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{selectedUser.activated_by_name}</span>
-                </div>
-              )}
-
-              {selectedUser.rejection_reason && (
-                <div style={{ gridColumn: 'span 2' }}>
-                  <span style={{ color: '#b91c1c', display: 'block', fontSize: '0.75rem', textTransform: 'uppercase' }}>Rejection Reason</span>
-                  <span style={{ color: '#991b1b', fontWeight: 600 }}>{selectedUser.rejection_reason}</span>
-                </div>
-              )}
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-              <button
-                onClick={() => setSelectedUser(null)}
+                onClick={handleDeleteUser}
                 className="btn btn-primary"
-                style={{ width: '100%' }}
+                style={{ background: '#ef4444', borderColor: '#ef4444', fontWeight: 700 }}
               >
-                Close Profile
+                Yes, Delete Account
               </button>
             </div>
           </div>
         </div>
       )}
-
-      {/* MODAL 5: Toggle Status Confirmation Modal */}
-      {confirmToggleUser && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div style={{ background: '#ffffff', borderRadius: '20px', maxWidth: '440px', width: '100%', padding: '2rem', boxShadow: '0 25px 60px rgba(0,0,0,0.3)', textAlign: 'center' }}>
-            <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: '#fff7ed', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
-              <AlertTriangle size={26} />
-            </div>
-
-            <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)' }}>
-              {confirmToggleUser.is_active ? 'Deactivate Account?' : 'Reactivate Account?'}
-            </h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
-              Are you sure you want to {confirmToggleUser.is_active ? 'deactivate' : 'reactivate'} <strong>{confirmToggleUser.full_name}</strong> ({confirmToggleUser.email})?
-            </p>
-
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button
-                onClick={() => setConfirmToggleUser(null)}
-                className="btn btn-secondary"
-                style={{ flex: 1 }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleToggleStatus}
-                className="btn btn-primary"
-                style={{ flex: 1, fontWeight: 700 }}
-              >
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 };

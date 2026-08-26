@@ -815,113 +815,80 @@ export function App() {
           </div>
         </div>
 
-        {/* ==================== GOOGLE ACCOUNT SELECTOR (DEV & SIMULATION MODAL) ==================== */}
+        {/* ==================== GOOGLE ACCOUNT SIGN-IN MODAL ==================== */}
         {showGoogleAccountSelector && (
           <div className="modal-overlay" onClick={() => setShowGoogleAccountSelector(false)}>
             <div
-              className="modal-content"
+              className="modal-content animate-fade-in"
               onClick={(e) => e.stopPropagation()}
-              style={{ maxWidth: '420px', padding: '1.75rem' }}
+              style={{ maxWidth: '440px', padding: '2rem' }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.85rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
                     <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.35 24 12 24z"/>
                     <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
                     <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.35 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
                   </svg>
-                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#1e293b' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#1e293b' }}>
                     Sign in with Google
                   </h3>
                 </div>
                 <button onClick={() => setShowGoogleAccountSelector(false)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}>
-                  <X size={18} />
+                  <X size={20} />
                 </button>
               </div>
 
-              <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 1rem' }}>
-                Select a registered Google account or enter your Google email address to verify ownership:
+              <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0 0 1.25rem', lineHeight: 1.4 }}>
+                Enter your registered Google Email address to verify your account and sign in:
               </p>
 
-              {/* Sample Quick Select Accounts */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.25rem' }}>
-                <button
-                  type="button"
-                  onClick={() => handleSimulatedGoogleLogin('student1@gmail.com')}
-                  style={{
-                    padding: '0.75rem 1rem',
-                    borderRadius: '10px',
-                    border: '1px solid #e2e8f0',
-                    background: '#f8fafc',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    transition: 'all 0.15s'
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = '#f1f5f9')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = '#f8fafc')}
-                >
-                  <div>
-                    <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.85rem' }}>Viswanthan T (Student)</div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>student1@gmail.com</div>
-                  </div>
-                  <span className="badge badge-purple">🎓 Student</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleSimulatedGoogleLogin('faculty1@gmail.com')}
-                  style={{
-                    padding: '0.75rem 1rem',
-                    borderRadius: '10px',
-                    border: '1px solid #e2e8f0',
-                    background: '#f8fafc',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    transition: 'all 0.15s'
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = '#f1f5f9')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = '#f8fafc')}
-                >
-                  <div>
-                    <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.85rem' }}>Dr. Ramanathan (Faculty)</div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>faculty1@gmail.com</div>
-                  </div>
-                  <span className="badge badge-blue">👨‍🏫 Faculty</span>
-                </button>
-              </div>
-
-              {/* Custom Google Email Input */}
-              <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '1rem' }}>
-                <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
-                  Or enter your registered Google Email:
-                </label>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (manualGoogleEmail.trim()) {
+                    handleSimulatedGoogleLogin(manualGoogleEmail.trim());
+                  }
+                }}
+                style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+              >
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.4rem' }}>
+                    Google Email Address *
+                  </label>
                   <input
                     type="email"
-                    placeholder="your.email@gmail.com"
+                    required
+                    autoFocus
+                    placeholder="e.g. student1@gmail.com"
                     value={manualGoogleEmail}
                     onChange={(e) => setManualGoogleEmail(e.target.value)}
                     className="input-field"
-                    style={{ flex: 1 }}
+                    style={{ width: '100%', fontSize: '0.95rem' }}
                   />
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
                   <button
                     type="button"
-                    disabled={!manualGoogleEmail.trim() || isSubmitting}
-                    onClick={() => handleSimulatedGoogleLogin(manualGoogleEmail)}
-                    className="btn btn-primary"
-                    style={{ fontWeight: 700, padding: '0 1rem' }}
+                    onClick={() => setShowGoogleAccountSelector(false)}
+                    className="btn btn-secondary"
+                    style={{ flex: 1 }}
                   >
-                    Verify & Login
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!manualGoogleEmail.trim() || isSubmitting}
+                    className="btn btn-primary"
+                    style={{ flex: 1.5, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}
+                  >
+                    {isSubmitting ? <RefreshCw size={16} className="animate-spin" /> : null}
+                    {isSubmitting ? 'Verifying...' : 'Sign In with Google'}
                   </button>
                 </div>
-              </div>
+              </form>
             </div>
           </div>
         )}

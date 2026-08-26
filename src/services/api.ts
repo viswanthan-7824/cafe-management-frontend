@@ -449,12 +449,35 @@ export const api = {
     }
   },
 
-  async getUsers(role?: string, status?: string, search?: string): Promise<User[]> {
+  async getUsers(
+    filterOrRole?: {
+      role?: string;
+      status?: string;
+      class_name?: string;
+      department?: string;
+      year?: number | string;
+      email_status?: string;
+      search?: string;
+    } | string,
+    statusParam?: string,
+    searchParam?: string
+  ): Promise<User[]> {
     try {
       const params = new URLSearchParams();
-      if (role && role !== 'ALL') params.append('role', role);
-      if (status && status !== 'ALL') params.append('status', status);
-      if (search) params.append('search', search);
+      if (typeof filterOrRole === 'object' && filterOrRole !== null) {
+        if (filterOrRole.role && filterOrRole.role !== 'ALL') params.append('role', filterOrRole.role);
+        if (filterOrRole.status && filterOrRole.status !== 'ALL') params.append('status', filterOrRole.status);
+        if (filterOrRole.class_name && filterOrRole.class_name !== 'ALL') params.append('class_name', filterOrRole.class_name);
+        if (filterOrRole.department && filterOrRole.department !== 'ALL') params.append('department', filterOrRole.department);
+        if (filterOrRole.year && filterOrRole.year !== 'ALL') params.append('year', String(filterOrRole.year));
+        if (filterOrRole.email_status && filterOrRole.email_status !== 'ALL') params.append('email_status', filterOrRole.email_status);
+        if (filterOrRole.search) params.append('search', filterOrRole.search);
+      } else {
+        if (filterOrRole && filterOrRole !== 'ALL') params.append('role', filterOrRole);
+        if (statusParam && statusParam !== 'ALL') params.append('status', statusParam);
+        if (searchParam) params.append('search', searchParam);
+      }
+
       const url = `${API_BASE_URL}/auth/users/${params.toString() ? `?${params.toString()}` : ''}`;
       const res = await fetch(url, { headers: authHeaders() });
       if (!res.ok) return [];
@@ -492,13 +515,17 @@ export const api = {
 
   async createUser(payload: {
     full_name: string;
-    email: string;
+    email?: string;
     role: string;
     college_id?: string;
     mobile_number?: string;
     status?: string;
+    class_name?: string;
     department?: string;
     year?: number;
+    section?: string;
+    gender?: string;
+    designation?: string;
   }): Promise<User> {
     const res = await fetch(`${API_BASE_URL}/auth/users/`, {
       method: 'POST',
@@ -515,13 +542,17 @@ export const api = {
 
   async updateUser(userId: number, payload: Partial<{
     full_name: string;
-    email: string;
+    email: string | null;
     role: string;
     college_id: string;
     mobile_number: string;
     status: string;
+    class_name: string;
     department: string;
     year: number;
+    section: string;
+    gender: string;
+    designation: string;
   }>): Promise<User> {
     const res = await fetch(`${API_BASE_URL}/auth/users/${userId}/`, {
       method: 'PATCH',
@@ -550,6 +581,86 @@ export const api = {
 
   async rejectUser(userId: number, reason?: string): Promise<User> {
     return this.toggleUserStatus(userId, 'INACTIVE');
+  },
+
+  // ==================== EXCEL IMPORT, EXPORT & CLASS HUB ====================
+
+  async previewExcelImport(formData: FormData): Promise<any> {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${API_BASE_URL}/auth/excel/preview/`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || err.error || 'Failed to parse and validate Excel file');
+    }
+    return await res.json();
+  },
+
+  async confirmExcelImport(payload: {
+    file_name: string;
+    role: string;
+    target_class?: string;
+    rows: any[];
+  }): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/auth/excel/confirm/`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || err.error || 'Failed to complete Excel import');
+    }
+    return await res.json();
+  },
+
+  async downloadExcelTemplate(role: 'STUDENT' | 'FACULTY' = 'STUDENT'): Promise<Blob> {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${API_BASE_URL}/auth/excel/template/?role=${role}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!res.ok) {
+      throw new Error('Failed to download template file');
+    }
+    return await res.blob();
+  },
+
+  async exportClassExcel(className?: string, department?: string): Promise<Blob> {
+    const token = localStorage.getItem('token');
+    const params = new URLSearchParams();
+    if (className && className !== 'ALL') params.append('class_name', className);
+    if (department && department !== 'ALL') params.append('department', department);
+
+    const res = await fetch(`${API_BASE_URL}/auth/excel/export/?${params.toString()}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!res.ok) {
+      throw new Error('Failed to export class roster');
+    }
+    return await res.blob();
+  },
+
+  async getClassesList(): Promise<any[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/classes/`, { headers: authHeaders() });
+      if (!res.ok) return [];
+      return await res.json();
+    } catch {
+      return [];
+    }
+  },
+
+  async getImportAudits(): Promise<any[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/excel/audits/`, { headers: authHeaders() });
+      if (!res.ok) return [];
+      return await res.json();
+    } catch {
+      return [];
+    }
   },
 
   async changePassword(payload: { current_password: string; new_password: string; confirm_password: string }): Promise<{ message: string }> {

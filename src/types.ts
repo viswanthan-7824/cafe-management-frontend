@@ -3,7 +3,7 @@ export type UserAccountStatus = 'PENDING' | 'ACTIVE' | 'INACTIVE' | 'REJECTED';
 
 export interface User {
   id: number;
-  email: string;
+  email: string | null;
   full_name: string;
   college_id?: string;
   mobile_number: string;
@@ -12,6 +12,11 @@ export interface User {
   must_change_password: boolean;
   is_active: boolean;
   is_demo?: boolean;
+  is_email_linked?: boolean;
+  class_name?: string;
+  department?: string;
+  year?: number | null;
+  section?: string;
   google_sub?: string | null;
   created_at: string;
   last_login?: string | null;
@@ -19,17 +24,104 @@ export interface User {
   activated_by?: number | null;
   activated_by_name?: string | null;
   rejection_reason?: string;
-  student_profile?: { register_number: string; department: string; year: number };
-  faculty_profile?: { staff_number: string; department: string };
+  student_profile?: {
+    register_number: string;
+    class_name?: string;
+    department: string;
+    year: number;
+    section?: string;
+    gender?: string;
+    academic_year?: string;
+  };
+  faculty_profile?: {
+    staff_number: string;
+    department: string;
+    designation?: string;
+    class_assigned?: string;
+  };
 }
 
 export interface UserStats {
   total_users: number;
+  total_students?: number;
+  total_faculty?: number;
   pending_users: number;
   active_users: number;
   inactive_users: number;
-  rejected_users: number;
+  email_linked_students?: number;
+  email_missing_students?: number;
+  classes_count?: number;
+  rejected_users?: number;
 }
+
+export interface ExcelPreviewRow {
+  row_index: number;
+  name: string;
+  register_number: string;
+  class_name: string;
+  phone: string;
+  email: string;
+  has_email: boolean;
+  department: string;
+  year: number;
+  section: string;
+  gender: string;
+  academic_year: string;
+  status: 'VALID' | 'UPDATE' | 'ERROR';
+  status_message: string;
+  errors: string[];
+  warnings: string[];
+}
+
+export interface ExcelPreviewResult {
+  total_rows: number;
+  valid_count: number;
+  update_count: number;
+  error_count: number;
+  has_errors: boolean;
+  role: 'STUDENT' | 'FACULTY';
+  default_class: string;
+  file_name: string;
+  rows: ExcelPreviewRow[];
+}
+
+export interface ExcelImportResult {
+  audit_id?: number;
+  total_rows: number;
+  created_count: number;
+  updated_count: number;
+  failed_count: number;
+  skipped_details: Array<{
+    register_number: string;
+    name: string;
+    reason: string;
+  }>;
+}
+
+export interface ClassSummary {
+  class_name: string;
+  department: string;
+  year: number;
+  total_students: number;
+  email_linked_count: number;
+  email_missing_count: number;
+  percent_linked: number;
+}
+
+export interface UserImportAudit {
+  id: number;
+  created_at: string;
+  admin_name: string;
+  file_name: string;
+  target_role: string;
+  target_class: string;
+  total_rows: number;
+  created_count: number;
+  updated_count: number;
+  failed_count: number;
+  details?: any;
+}
+
 
 export type FoodType = 'READY_FOOD' | 'MADE_TO_ORDER' | 'CONTACT_ORDER';
 export type AvailabilityStatus = 'AVAILABLE' | 'LOW_STOCK' | 'OUT_OF_STOCK' | 'CONTACT_ORDER' | 'PRE_ORDER' | 'UNAVAILABLE';

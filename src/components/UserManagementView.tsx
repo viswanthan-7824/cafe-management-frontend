@@ -32,7 +32,9 @@ import {
   AlertCircle,
   BookOpen,
   History,
-  FileText
+  FileText,
+  KeyRound,
+  Copy
 } from 'lucide-react';
 import { api } from '../services/api';
 import type {
@@ -47,7 +49,7 @@ import type {
   UserImportAudit
 } from '../types';
 
-type ViewSubTab = 'ALL' | 'STUDENTS' | 'FACULTY' | 'CLASSES' | 'IMPORT_EXCEL' | 'IMPORT_AUDIT';
+type ViewSubTab = 'ALL' | 'STUDENTS' | 'FACULTY' | 'CLASSES' | 'IMPORT_EXCEL' | 'IMPORT_AUDIT' | 'REGISTRATION_OTPS';
 
 export const UserManagementView: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<ViewSubTab>('ALL');
@@ -63,6 +65,11 @@ export const UserManagementView: React.FC = () => {
     email_missing_students: 0,
     classes_count: 0
   });
+
+  // Registration OTP Requests State (viswanthan7824)
+  const [registrationOtps, setRegistrationOtps] = useState<any[]>([]);
+  const [loadingOtps, setLoadingOtps] = useState(false);
+  const [copiedOtpId, setCopiedOtpId] = useState<number | null>(null);
 
   // Filter States
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -135,7 +142,20 @@ export const UserManagementView: React.FC = () => {
     loadData();
     loadClasses();
     loadAudits();
+    loadRegistrationOtps();
   }, [statusFilter, roleFilter, classFilter, deptFilter, yearFilter, emailStatusFilter, activeSubTab]);
+
+  async function loadRegistrationOtps() {
+    setLoadingOtps(true);
+    try {
+      const data = await api.getAdminRegistrationOtps();
+      setRegistrationOtps(data);
+    } catch (e) {
+      console.error('Failed to load registration OTPs:', e);
+    } finally {
+      setLoadingOtps(false);
+    }
+  }
 
   async function loadData() {
     setLoading(true);
@@ -499,6 +519,7 @@ export const UserManagementView: React.FC = () => {
           { id: 'STUDENTS', label: '🎓 Students', count: stats.total_students || 0 },
           { id: 'FACULTY', label: '👨‍🏫 Faculty', count: stats.total_faculty || 0 },
           { id: 'CLASSES', label: '🏫 Class Hub', count: classesList.length },
+          { id: 'REGISTRATION_OTPS', label: '🔑 Registration OTPs (viswanthan7824)', count: registrationOtps.filter(o => o.is_valid && !o.is_used).length },
           { id: 'IMPORT_EXCEL', label: '📊 Bulk Excel Import', highlight: true },
           { id: 'IMPORT_AUDIT', label: '📜 Import History', count: importAudits.length },
         ].map((tab) => (
@@ -1116,6 +1137,154 @@ export const UserManagementView: React.FC = () => {
                       </td>
                     </tr>
                   ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 3.5. REGISTRATION OTP REQUESTS VIEW (viswanthan7824) */}
+      {/* ========================================================================= */}
+      {activeSubTab === 'REGISTRATION_OTPS' && (
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#1e293b' }}>
+                  Student & Faculty Registration OTPs
+                </h3>
+                <span className="badge badge-purple" style={{ fontSize: '0.72rem', fontWeight: 800 }}>
+                  Admin Account: viswanthan7824
+                </span>
+              </div>
+              <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.2rem 0 0' }}>
+                Active dual-verification OTPs requested by students and faculty from the approved class Excel rosters.
+              </p>
+            </div>
+
+            <button
+              onClick={loadRegistrationOtps}
+              disabled={loadingOtps}
+              className="btn btn-secondary"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}
+            >
+              <RefreshCw size={15} className={loadingOtps ? 'animate-spin' : ''} />
+              {loadingOtps ? 'Refreshing...' : 'Refresh OTPs'}
+            </button>
+          </div>
+
+          <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+              <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                <tr>
+                  <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800 }}>Requested At</th>
+                  <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800 }}>Student / Faculty</th>
+                  <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800 }}>Email Address</th>
+                  <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800 }}>Class / Register No</th>
+                  <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800, color: '#e11d48' }}>Admin OTP (viswanthan7824)</th>
+                  <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800 }}>Gmail OTP</th>
+                  <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800 }}>Status</th>
+                  <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 800 }}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {registrationOtps.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} style={{ padding: '2.5rem', textAlign: 'center', color: '#94a3b8' }}>
+                      No registration OTP requests recorded yet.
+                    </td>
+                  </tr>
+                ) : (
+                  registrationOtps.map((otp) => {
+                    const isPending = otp.is_valid && !otp.is_used;
+                    return (
+                      <tr key={otp.id} style={{ borderBottom: '1px solid #f1f5f9', background: isPending ? '#fff7ed' : 'transparent' }}>
+                        <td style={{ padding: '0.75rem 1rem', color: '#64748b' }}>
+                          {new Date(otp.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                        </td>
+                        <td style={{ padding: '0.75rem 1rem', fontWeight: 700, color: '#1e293b' }}>
+                          <div>{otp.full_name || 'Student'}</div>
+                          <span className={`badge ${otp.role === 'FACULTY' ? 'badge-purple' : 'badge-orange'}`} style={{ fontSize: '0.68rem', marginTop: '2px' }}>
+                            {otp.role}
+                          </span>
+                        </td>
+                        <td style={{ padding: '0.75rem 1rem', color: '#2563eb', fontWeight: 600 }}>
+                          {otp.email}
+                        </td>
+                        <td style={{ padding: '0.75rem 1rem' }}>
+                          <div style={{ fontWeight: 600 }}>{otp.class_name || '—'}</div>
+                          <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{otp.college_id || '—'}</div>
+                        </td>
+                        <td style={{ padding: '0.75rem 1rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <span
+                              style={{
+                                background: '#ffe4e6',
+                                color: '#e11d48',
+                                padding: '0.25rem 0.6rem',
+                                borderRadius: '8px',
+                                fontWeight: 900,
+                                fontSize: '1rem',
+                                letterSpacing: '0.1em'
+                              }}
+                            >
+                              {otp.admin_otp}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(otp.admin_otp);
+                                setCopiedOtpId(otp.id);
+                                setTimeout(() => setCopiedOtpId(null), 1500);
+                              }}
+                              style={{
+                                background: 'none',
+                                border: '1px solid #fed7aa',
+                                borderRadius: '6px',
+                                padding: '0.2rem 0.4rem',
+                                cursor: 'pointer',
+                                fontSize: '0.72rem',
+                                color: copiedOtpId === otp.id ? '#047857' : '#ea580c'
+                              }}
+                            >
+                              {copiedOtpId === otp.id ? 'Copied!' : <Copy size={13} />}
+                            </button>
+                          </div>
+                        </td>
+                        <td style={{ padding: '0.75rem 1rem', fontFamily: 'monospace', fontWeight: 700, color: '#475569' }}>
+                          {otp.gmail_otp}
+                        </td>
+                        <td style={{ padding: '0.75rem 1rem' }}>
+                          {otp.is_used ? (
+                            <span className="badge badge-green">✓ Activated & Registered</span>
+                          ) : !otp.is_valid ? (
+                            <span className="badge badge-gray">Expired</span>
+                          ) : otp.is_gmail_verified && otp.is_admin_verified ? (
+                            <span className="badge badge-blue">OTPs Verified (Pending Password)</span>
+                          ) : (
+                            <span className="badge badge-orange">⏳ Awaiting Verification</span>
+                          )}
+                        </td>
+                        <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
+                          {isPending && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(otp.admin_otp);
+                                alert(`Admin OTP ${otp.admin_otp} copied! You can provide this to student ${otp.full_name || otp.email}.`);
+                              }}
+                              className="btn btn-secondary"
+                              style={{ padding: '0.3rem 0.6rem', fontSize: '0.72rem', fontWeight: 700 }}
+                            >
+                              Provide Admin OTP
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

@@ -29,7 +29,10 @@ export const getMediaUrl = (path: string | null | undefined): string => {
   if (!path) return '';
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return `${BACKEND_SERVER_URL}${cleanPath}`;
+  if (cleanPath.startsWith('/media/')) {
+    return `${BACKEND_SERVER_URL}${cleanPath}`;
+  }
+  return `${BACKEND_SERVER_URL}/media${cleanPath}`;
 };
 
 let token: string | null = localStorage.getItem('token') || null;
@@ -84,6 +87,145 @@ export const api = {
         throw new Error(`Unable to connect to the server. Please try again.`);
       }
       throw new Error(e.message || 'Google authentication failed');
+    }
+  },
+
+  async studentPasswordLogin(email: string, password: string): Promise<{ token: string; user: User }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/student/login/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
+      });
+      if (!res.ok) {
+        let errMessage = 'Login failed';
+        try {
+          const errData = await res.json();
+          if (errData.detail) {
+            errMessage = Array.isArray(errData.detail) ? errData.detail.join(', ') : String(errData.detail);
+          } else if (errData.error) {
+            errMessage = errData.error;
+          }
+        } catch (_) {}
+        throw new Error(errMessage);
+      }
+      const data = await res.json();
+      setAuthToken(data.access);
+      return { token: data.access, user: data.user };
+    } catch (e: any) {
+      if (e.message?.includes('Failed to fetch') || e.name === 'TypeError') {
+        throw new Error(`Unable to connect to the server. Please try again.`);
+      }
+      throw new Error(e.message || 'Login failed');
+    }
+  },
+
+  async requestRegistrationOtp(email: string): Promise<{
+    message: string;
+    email: string;
+    full_name?: string;
+    role?: string;
+    class_name?: string;
+    college_id?: string;
+    admin_account?: string;
+    simulation_gmail_otp?: string;
+    simulation_admin_otp?: string;
+    is_registered?: boolean;
+  }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/register/request-otp/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        let errMessage = data.detail || 'Unable to generate verification codes.';
+        throw new Error(Array.isArray(errMessage) ? errMessage.join(', ') : String(errMessage));
+      }
+      return data;
+    } catch (e: any) {
+      if (e.message?.includes('Failed to fetch') || e.name === 'TypeError') {
+        throw new Error(`Unable to connect to the server. Please try again.`);
+      }
+      throw e;
+    }
+  },
+
+  async verifyRegistrationOtps(email: string, gmailOtp: string, adminOtp: string): Promise<{
+    message: string;
+    verification_token: string;
+    email: string;
+    full_name?: string;
+  }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/register/verify-otps/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          gmail_otp: gmailOtp.trim(),
+          admin_otp: adminOtp.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        let errMessage = data.detail || 'OTP verification failed.';
+        throw new Error(Array.isArray(errMessage) ? errMessage.join(', ') : String(errMessage));
+      }
+      return data;
+    } catch (e: any) {
+      if (e.message?.includes('Failed to fetch') || e.name === 'TypeError') {
+        throw new Error(`Unable to connect to the server. Please try again.`);
+      }
+      throw e;
+    }
+  },
+
+  async completeRegistration(verificationToken: string, password: string, confirmPassword: string): Promise<{
+    token: string;
+    user: User;
+    message: string;
+  }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/register/complete/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          verification_token: verificationToken,
+          password,
+          confirm_password: confirmPassword,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        let errMessage = data.detail || 'Registration completion failed.';
+        if (data.confirm_password) {
+          errMessage = data.confirm_password;
+        } else if (data.password) {
+          errMessage = data.password;
+        }
+        throw new Error(Array.isArray(errMessage) ? errMessage.join(', ') : String(errMessage));
+      }
+      setAuthToken(data.access);
+      return { token: data.access, user: data.user, message: data.message };
+    } catch (e: any) {
+      if (e.message?.includes('Failed to fetch') || e.name === 'TypeError') {
+        throw new Error(`Unable to connect to the server. Please try again.`);
+      }
+      throw e;
+    }
+  },
+
+  async getAdminRegistrationOtps(): Promise<any[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/admin/registration-otps/`, {
+        headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error('Failed to fetch registration OTPs');
+      return await res.json();
+    } catch (e) {
+      return [];
     }
   },
 

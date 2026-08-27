@@ -6,6 +6,7 @@ import type {
   Order,
   PaymentSupportTicket,
   Product,
+  ProductDashboardStats,
   User,
   UserStats,
   AnalyticsOverview,
@@ -265,12 +266,15 @@ export const api = {
 
   async getCurrentBusinessDay(): Promise<{
     date: string;
+    day_name?: string;
     is_ordering_open: boolean;
     message: string;
     status: string;
     opening_time: string;
     closing_time: string;
     reason?: string;
+    updated_at?: string;
+    updated_by_name?: string;
   }> {
     try {
       const res = await fetch(`${API_BASE_URL}/business-day/current/`);
@@ -279,13 +283,19 @@ export const api = {
     } catch (e) {
       return {
         date: new Date().toISOString().split('T')[0],
+        day_name: new Date().toLocaleDateString('en-US', { weekday: 'long' }),
         is_ordering_open: true,
         message: '🟢 SAEC CAFÉ • Ordering Open (10:00 AM – 3:30 PM)',
         status: 'WORKING_DAY',
         opening_time: '10:00',
-        closing_time: '15:30'
+        closing_time: '15:30',
+        updated_by_name: 'System Admin'
       };
     }
+  },
+
+  async getCurrentBusinessDayStatus() {
+    return this.getCurrentBusinessDay();
   },
 
   async getCalendar(): Promise<BusinessDay[]> {
@@ -297,6 +307,45 @@ export const api = {
     } catch (e) {
       return [];
     }
+  },
+
+  async setTodayWorkingDay(reason: string = '', opening_time: string = '10:00', closing_time: string = '15:30'): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/business-day/set-today-working/`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ reason, opening_time, closing_time })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || err.error || 'Failed to mark today as a working day');
+    }
+    return await res.json();
+  },
+
+  async setTodayHoliday(reason: string = 'College Holiday'): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/business-day/set-today-holiday/`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ reason })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || err.error || 'Failed to mark today as a holiday');
+    }
+    return await res.json();
+  },
+
+  async setDateStatus(date: string, status: string, reason: string = '', opening_time: string = '10:00', closing_time: string = '15:30'): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/business-day/set-date-status/`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ date, status, reason, opening_time, closing_time })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || err.error || 'Failed to update date status');
+    }
+    return await res.json();
   },
 
   async bulkScheduleCalendar(dates: string[], status: string, opening_time: string, closing_time: string, reason: string) {
@@ -323,15 +372,108 @@ export const api = {
     }
   },
 
+  async getProductStats(): Promise<ProductDashboardStats> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/products/stats/`, { headers: authHeaders() });
+      if (!res.ok) {
+        return {
+          total_products: 0,
+          available_products: 0,
+          out_of_stock: 0,
+          inactive_products: 0,
+          total_categories: 0,
+          products_added_today: 0,
+        };
+      }
+      return await res.json();
+    } catch (e) {
+      return {
+        total_products: 0,
+        available_products: 0,
+        out_of_stock: 0,
+        inactive_products: 0,
+        total_categories: 0,
+        products_added_today: 0,
+      };
+    }
+  },
+
   async getCategories(): Promise<Category[]> {
     try {
-      const res = await fetch(`${API_BASE_URL}/products/categories/`);
+      const res = await fetch(`${API_BASE_URL}/products/categories/?all=true`);
       if (!res.ok) return [];
       const data = await res.json();
       return Array.isArray(data) ? data : data.results || [];
     } catch (e) {
       return [];
     }
+  },
+
+  async createCategory(categoryData: Partial<Category>): Promise<Category> {
+    const res = await fetch(`${API_BASE_URL}/products/categories/`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(categoryData)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.name?.[0] || err.detail || err.error || 'Failed to create category');
+    }
+    return await res.json();
+  },
+
+  async updateCategory(id: number, categoryData: Partial<Category>): Promise<Category> {
+    const res = await fetch(`${API_BASE_URL}/products/categories/${id}/`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify(categoryData)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.name?.[0] || err.detail || err.error || 'Failed to update category');
+    }
+    return await res.json();
+  },
+
+  async deleteCategory(id: number): Promise<void> {
+    const res = await fetch(`${API_BASE_URL}/products/categories/${id}/`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to delete category');
+  },
+
+  async toggleProductAvailability(id: number, today_availability: string, is_active?: boolean): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/products/${id}/availability/`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ today_availability, is_active })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || err.error || 'Failed to update availability status');
+    }
+    return await res.json();
+  },
+
+  async generateAiProductImage(name: string, description: string = '', category_name: string = ''): Promise<{
+    preview_url: string;
+    image_data: string;
+    prompt_used: string;
+    source: string;
+    is_gemini_active: boolean;
+    message: string;
+  }> {
+    const res = await fetch(`${API_BASE_URL}/products/generate-ai-image/`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ name, description, category_name })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || err.detail || 'Failed to generate product image with Gemini AI');
+    }
+    return await res.json();
   },
 
   async createPosOrder(items: { product_id: number; quantity: number }[], discount: number, paymentMethod: string): Promise<Order> {

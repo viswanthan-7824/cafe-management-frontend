@@ -125,12 +125,14 @@ export interface UserImportAudit {
 
 export type FoodType = 'READY_FOOD' | 'MADE_TO_ORDER' | 'CONTACT_ORDER';
 export type AvailabilityStatus = 'AVAILABLE' | 'LOW_STOCK' | 'OUT_OF_STOCK' | 'CONTACT_ORDER' | 'PRE_ORDER' | 'UNAVAILABLE';
+export type TodayAvailability = 'AVAILABLE' | 'OUT_OF_STOCK' | 'NOT_AVAILABLE_TODAY';
 
 export interface Category {
   id: number;
   name: string;
   description: string;
   icon_name: string;
+  is_active?: boolean;
   product_count?: number;
 }
 
@@ -143,8 +145,12 @@ export interface Product {
   price: number;
   cost_price: number;
   image?: string;
+  image_url?: string;
   barcode?: string;
   sku?: string;
+  unit: string;
+  today_availability: TodayAvailability;
+  display_order: number;
   food_type: FoodType;
   preparation_time: number;
   minimum_advance_time: number;
@@ -153,6 +159,17 @@ export interface Product {
   maximum_stock: number;
   availability_status: AvailabilityStatus;
   is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ProductDashboardStats {
+  total_products: number;
+  available_products: number;
+  out_of_stock: number;
+  inactive_products: number;
+  total_categories: number;
+  products_added_today: number;
 }
 
 export type DayStatus = 'WORKING_DAY' | 'HOLIDAY' | 'CLOSED' | 'SPECIAL_WORKING_DAY' | 'NOT_SCHEDULED';
@@ -160,6 +177,7 @@ export type DayStatus = 'WORKING_DAY' | 'HOLIDAY' | 'CLOSED' | 'SPECIAL_WORKING_
 export interface BusinessDay {
   id?: number;
   date: string;
+  day_name?: string;
   status: DayStatus;
   opening_time: string;
   closing_time: string;
@@ -167,6 +185,9 @@ export interface BusinessDay {
   notes?: string;
   is_ordering_enabled: boolean;
   daily_order_sequence: number;
+  updated_by_name?: string;
+  updated_at?: string;
+  created_at?: string;
 }
 
 export type OrderStatus =

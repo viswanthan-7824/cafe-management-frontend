@@ -149,6 +149,86 @@ export const api = {
     return { token: data.token, user: data.user };
   },
 
+  async requestCreatePasswordOtp(email: string): Promise<{ message: string; masked_email: string; resend_cooldown: number; dev_code?: string }> {
+    const res = await fetch(`${API_BASE_URL}/auth/create-password/request-otp/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.trim().toLowerCase() })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.detail || data.error || 'This email is not registered. Please contact the administrator.');
+    }
+    return data;
+  },
+
+  async verifyCreatePasswordOtp(email: string, code: string): Promise<{ message: string; verification_token: string; email: string }> {
+    const res = await fetch(`${API_BASE_URL}/auth/create-password/verify-otp/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.trim().toLowerCase(), code: code.trim() })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || data.detail || 'Invalid verification code.');
+    }
+    return data;
+  },
+
+  async setCreatePassword(verificationToken: string, password: string, confirmPassword: string): Promise<{ message: string }> {
+    const res = await fetch(`${API_BASE_URL}/auth/create-password/set-password/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ verification_token: verificationToken, password, confirm_password: confirmPassword })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const msg = data.detail || data.password || data.confirm_password || 'Failed to create password.';
+      throw new Error(Array.isArray(msg) ? msg.join(', ') : String(msg));
+    }
+    return data;
+  },
+
+  async requestForgotPasswordOtp(email: string): Promise<{ message: string; masked_email: string; resend_cooldown: number; dev_code?: string }> {
+    const res = await fetch(`${API_BASE_URL}/auth/forgot-password/request-otp/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.trim().toLowerCase() })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.detail || data.error || 'This email is not registered. Please contact the administrator.');
+    }
+    return data;
+  },
+
+  async verifyForgotPasswordOtp(email: string, code: string): Promise<{ message: string; verification_token: string; email: string }> {
+    const res = await fetch(`${API_BASE_URL}/auth/forgot-password/verify-otp/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.trim().toLowerCase(), code: code.trim() })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || data.detail || 'Invalid verification code.');
+    }
+    return data;
+  },
+
+  async setForgotPassword(verificationToken: string, password: string, confirmPassword: string): Promise<{ message: string }> {
+    const res = await fetch(`${API_BASE_URL}/auth/forgot-password/set-password/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ verification_token: verificationToken, password, confirm_password: confirmPassword })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const msg = data.detail || data.password || data.confirm_password || 'Failed to reset password.';
+      throw new Error(Array.isArray(msg) ? msg.join(', ') : String(msg));
+    }
+    return data;
+  },
+
   async requestRegistrationOtp(email: string): Promise<{
     message: string;
     email: string;

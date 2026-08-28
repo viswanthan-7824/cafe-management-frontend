@@ -140,9 +140,86 @@ export function App() {
     }
   }
 
-  const handleRequestCode = async (e?: React.FormEvent) => {
+  // Auth Flow Mode: LOGIN, CREATE_PASSWORD_*, FORGOT_PASSWORD_*
+  const [authFlowMode, setAuthFlowMode] = useState<
+    | 'LOGIN'
+    | 'CREATE_PASSWORD_EMAIL'
+    | 'CREATE_PASSWORD_OTP'
+    | 'CREATE_PASSWORD_NEW'
+    | 'CREATE_PASSWORD_SUCCESS'
+    | 'FORGOT_PASSWORD_EMAIL'
+    | 'FORGOT_PASSWORD_OTP'
+    | 'FORGOT_PASSWORD_NEW'
+    | 'FORGOT_PASSWORD_SUCCESS'
+  >('LOGIN');
+
+  // Password Creation & Reset Form States
+  const [createPasswordEmail, setCreatePasswordEmail] = useState('');
+  const [createPasswordOtp, setCreatePasswordOtp] = useState('');
+  const [createPasswordNewPass, setCreatePasswordNewPass] = useState('');
+  const [createPasswordConfirmPass, setCreatePasswordConfirmPass] = useState('');
+  const [showCreatePass, setShowCreatePass] = useState(false);
+  const [createPasswordToken, setCreatePasswordToken] = useState('');
+
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [forgotPasswordOtp, setForgotPasswordOtp] = useState('');
+  const [forgotPasswordNewPass, setForgotPasswordNewPass] = useState('');
+  const [forgotPasswordConfirmPass, setForgotPasswordConfirmPass] = useState('');
+  const [showForgotPass, setShowForgotPass] = useState(false);
+  const [forgotPasswordToken, setForgotPasswordToken] = useState('');
+
+  // Password Strength Calculation Helper
+  const getPasswordStrength = (pass: string) => {
+    const checks = {
+      length: pass.length >= 8,
+      upper: /[A-Z]/.test(pass),
+      lower: /[a-z]/.test(pass),
+      number: /[0-9]/.test(pass),
+      special: /[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(pass)
+    };
+    let score = 0;
+    if (checks.length) score += 1;
+    if (checks.upper) score += 1;
+    if (checks.lower) score += 1;
+    if (checks.number) score += 1;
+    if (checks.special) score += 1;
+
+    let label = 'Weak';
+    let color = '#ef4444';
+    if (score === 5) {
+      label = 'Strong';
+      color = '#10b981';
+    } else if (score >= 3) {
+      label = 'Medium';
+      color = '#f59e0b';
+    }
+    return { score, label, color, checks };
+  };
+
+  // Normal Student / Faculty Password Login Handler
+  const handleStudentPasswordLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!studentEmail.trim() || !studentPassword || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setLoginError('');
+    setAuthSuccessMessage('');
+
+    try {
+      const res = await api.studentPasswordLogin(studentEmail.trim(), studentPassword);
+      setUser(res.user);
+      setActiveTab(res.user.role === 'ADMIN' ? 'dashboard' : 'menu');
+    } catch (err: any) {
+      setLoginError(err.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Create Password Handlers
+  const handleCreatePasswordRequestOtpSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!loginEmail.trim() || !studentPassword || isSubmitting) return;
+    if (!createPasswordEmail.trim() || isSubmitting) return;
 
     setIsSubmitting(true);
     setLoginError('');
@@ -150,38 +227,134 @@ export function App() {
     setDevCodeNotification(null);
 
     try {
-      const res = await api.requestLoginCode(loginEmail.trim(), studentPassword);
-      setMaskedEmail(res.masked_email || loginEmail.trim());
+      const res = await api.requestCreatePasswordOtp(createPasswordEmail.trim());
+      setMaskedEmail(res.masked_email || createPasswordEmail.trim());
       setResendCooldown(res.resend_cooldown || 60);
       if (res.dev_code) {
         setDevCodeNotification(`Verification Code (Dev Mode): ${res.dev_code}`);
       }
-      setAuthStep('CODE');
+      setAuthFlowMode('CREATE_PASSWORD_OTP');
     } catch (err: any) {
-      setLoginError(err.message || 'Authentication failed. Please check your email and password.');
+      setLoginError(err.message || 'This email is not registered. Please contact the administrator.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleVerifyCode = async (e: React.FormEvent) => {
+  const handleCreatePasswordVerifyOtpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otpCode.trim() || isSubmitting) return;
+    if (!createPasswordOtp.trim() || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setLoginError('');
+
+    try {
+      const res = await api.verifyCreatePasswordOtp(createPasswordEmail.trim(), createPasswordOtp.trim());
+      setCreatePasswordToken(res.verification_token);
+      setAuthFlowMode('CREATE_PASSWORD_NEW');
+    } catch (err: any) {
+      setLoginError(err.message || 'Invalid verification code.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCreatePasswordSetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createPasswordNewPass || !createPasswordConfirmPass || isSubmitting) return;
+
+    if (createPasswordNewPass !== createPasswordConfirmPass) {
+      setLoginError('Passwords do not match.');
+      return;
+    }
+
+    const strength = getPasswordStrength(createPasswordNewPass);
+    if (strength.score < 5) {
+      setLoginError('Password must satisfy all strength criteria (8+ chars, uppercase, lowercase, number, special char).');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setLoginError('');
+
+    try {
+      await api.setCreatePassword(createPasswordToken, createPasswordNewPass, createPasswordConfirmPass);
+      setAuthSuccessMessage('Password created successfully. You can now log in.');
+      setAuthFlowMode('CREATE_PASSWORD_SUCCESS');
+    } catch (err: any) {
+      setLoginError(err.message || 'Failed to create password.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Forgot Password Handlers
+  const handleForgotPasswordRequestOtpSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!forgotPasswordEmail.trim() || isSubmitting) return;
 
     setIsSubmitting(true);
     setLoginError('');
     setAuthSuccessMessage('');
+    setDevCodeNotification(null);
 
     try {
-      const res = await api.verifyLoginCode(loginEmail.trim(), otpCode.trim());
-      setUser(res.user);
-      if (res.user.role === 'ADMIN') {
-        setActiveTab('dashboard');
-      } else {
-        setActiveTab('menu');
+      const res = await api.requestForgotPasswordOtp(forgotPasswordEmail.trim());
+      setMaskedEmail(res.masked_email || forgotPasswordEmail.trim());
+      setResendCooldown(res.resend_cooldown || 60);
+      if (res.dev_code) {
+        setDevCodeNotification(`Verification Code (Dev Mode): ${res.dev_code}`);
       }
+      setAuthFlowMode('FORGOT_PASSWORD_OTP');
     } catch (err: any) {
-      setLoginError(err.message || 'Verification failed.');
+      setLoginError(err.message || 'This email is not registered. Please contact the administrator.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleForgotPasswordVerifyOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotPasswordOtp.trim() || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setLoginError('');
+
+    try {
+      const res = await api.verifyForgotPasswordOtp(forgotPasswordEmail.trim(), forgotPasswordOtp.trim());
+      setForgotPasswordToken(res.verification_token);
+      setAuthFlowMode('FORGOT_PASSWORD_NEW');
+    } catch (err: any) {
+      setLoginError(err.message || 'Invalid verification code.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleForgotPasswordSetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotPasswordNewPass || !forgotPasswordConfirmPass || isSubmitting) return;
+
+    if (forgotPasswordNewPass !== forgotPasswordConfirmPass) {
+      setLoginError('Passwords do not match.');
+      return;
+    }
+
+    const strength = getPasswordStrength(forgotPasswordNewPass);
+    if (strength.score < 5) {
+      setLoginError('Password must satisfy all strength criteria.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setLoginError('');
+
+    try {
+      await api.setForgotPassword(forgotPasswordToken, forgotPasswordNewPass, forgotPasswordConfirmPass);
+      setAuthSuccessMessage('Password reset successfully. You can now log in.');
+      setAuthFlowMode('FORGOT_PASSWORD_SUCCESS');
+    } catch (err: any) {
+      setLoginError(err.message || 'Failed to reset password.');
     } finally {
       setIsSubmitting(false);
     }
@@ -191,9 +364,10 @@ export function App() {
     setAuthToken(null);
     setUser(null);
     setShowLogoutConfirm(false);
-    setAuthStep('EMAIL');
-    setLoginEmail('');
-    setOtpCode('');
+    setAuthFlowMode('LOGIN');
+    setStudentEmail('');
+    setStudentPassword('');
+    setLoginError('');
     setDevCodeNotification(null);
   };
 
@@ -385,21 +559,22 @@ export function App() {
             </div>
           )}
 
-          {/* ================= PORTAL 1 & 2: STUDENT / FACULTY EMAIL + OTP SIGN IN ================= */}
+          {/* ================= PORTAL 1 & 2: STUDENT / FACULTY SIGN IN & PASSWORD CREATION ================= */}
           {(authPortal === 'STUDENT' || authPortal === 'FACULTY') && (
             <>
-              {authStep === 'EMAIL' && (
+              {/* FLOW 1: LOGIN (EMAIL + PASSWORD) */}
+              {authFlowMode === 'LOGIN' && (
                 <>
                   <div style={{ marginBottom: '1.25rem' }}>
                     <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.25rem' }}>
                       {authPortal === 'STUDENT' ? 'Student Sign-In' : 'Faculty / Staff Sign-In'} 👋
                     </h2>
                     <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0, lineHeight: 1.4 }}>
-                      Enter your registered institutional email and password to receive a 6-digit login verification code.
+                      Enter your registered institutional email and password to log in.
                     </p>
                   </div>
 
-                  <form onSubmit={handleRequestCode} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
+                  <form onSubmit={handleStudentPasswordLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
                     <div>
                       <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '0.4rem' }}>
                         {authPortal === 'STUDENT' ? 'Student Email Address' : 'Faculty Email Address'}
@@ -409,9 +584,9 @@ export function App() {
                           type="email"
                           required
                           autoFocus
-                          placeholder={authPortal === 'STUDENT' ? "Enter student email" : "Enter faculty email"}
-                          value={loginEmail}
-                          onChange={(e) => setLoginEmail(e.target.value)}
+                          placeholder={authPortal === 'STUDENT' ? "student@saec.ac.in" : "faculty@saec.ac.in"}
+                          value={studentEmail}
+                          onChange={(e) => setStudentEmail(e.target.value)}
                           className="input-field"
                           style={{ width: '100%', paddingLeft: '2.5rem', fontSize: '0.95rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '12px', height: '48px' }}
                         />
@@ -427,7 +602,7 @@ export function App() {
                         <input
                           type={showStudentPassword ? "text" : "password"}
                           required
-                          placeholder="Enter password"
+                          placeholder="Enter your password"
                           value={studentPassword}
                           onChange={(e) => setStudentPassword(e.target.value)}
                           className="input-field"
@@ -446,49 +621,117 @@ export function App() {
 
                     <button
                       type="submit"
-                      disabled={!loginEmail.trim() || !studentPassword || isSubmitting}
+                      disabled={!studentEmail.trim() || !studentPassword || isSubmitting}
                       className="btn btn-primary"
                       style={{ width: '100%', height: '48px', fontSize: '0.95rem', fontWeight: 800, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', boxShadow: '0 4px 14px rgba(234, 88, 12, 0.35)' }}
                     >
-                      {isSubmitting ? <RefreshCw size={18} className="animate-spin" /> : null}
-                      {isSubmitting ? 'Validating Credentials...' : 'CONTINUE TO VERIFICATION'}
+                      {isSubmitting ? <RefreshCw size={18} className="animate-spin" /> : <LogIn size={18} />}
+                      {isSubmitting ? 'Authenticating...' : 'LOG IN'}
                     </button>
                   </form>
 
-                  <div style={{ marginTop: '1.5rem', textAlign: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '1.25rem' }}>
+                  {/* Actions Links: Create Password & Forgot Password */}
+                  <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.65rem', textAlign: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '1.25rem' }}>
                     <button
                       type="button"
-                      onClick={() => setCantAccessHelp(!cantAccessHelp)}
-                      style={{ background: 'none', border: 'none', color: '#ea580c', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+                      onClick={() => {
+                        setAuthFlowMode('CREATE_PASSWORD_EMAIL');
+                        setCreatePasswordEmail(studentEmail);
+                        setLoginError('');
+                        setAuthSuccessMessage('');
+                      }}
+                      style={{ background: 'none', border: 'none', color: '#ea580c', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', textDecoration: 'underline' }}
                     >
-                      Can't access your account?
+                      First time? Create your password
                     </button>
 
-                    {cantAccessHelp && (
-                      <div style={{ marginTop: '0.85rem', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '10px', padding: '0.85rem', fontSize: '0.8rem', color: '#9a3412', textAlign: 'left', lineHeight: 1.4 }}>
-                        <strong>Need Help?</strong><br />
-                        If you forgot your password or need an account created, please contact the canteen administrator.
-                      </div>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthFlowMode('FORGOT_PASSWORD_EMAIL');
+                        setForgotPasswordEmail(studentEmail);
+                        setLoginError('');
+                        setAuthSuccessMessage('');
+                      }}
+                      style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+                    >
+                      Forgot Password?
+                    </button>
                   </div>
                 </>
               )}
 
-              {authStep === 'CODE' && (
+              {/* FLOW 2: CREATE PASSWORD - STEP 1 EMAIL */}
+              {authFlowMode === 'CREATE_PASSWORD_EMAIL' && (
+                <>
+                  <div style={{ marginBottom: '1.25rem' }}>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.25rem' }}>
+                      Create Your Password 🔒
+                    </h2>
+                    <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0, lineHeight: 1.4 }}>
+                      Enter your registered institutional email. Password creation is only allowed if your email was registered by an Administrator.
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleCreatePasswordRequestOtpSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '0.4rem' }}>
+                        Registered Institutional Email
+                      </label>
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          type="email"
+                          required
+                          autoFocus
+                          placeholder="student@saec.ac.in"
+                          value={createPasswordEmail}
+                          onChange={(e) => setCreatePasswordEmail(e.target.value)}
+                          className="input-field"
+                          style={{ width: '100%', paddingLeft: '2.5rem', fontSize: '0.95rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '12px', height: '48px' }}
+                        />
+                        <Mail size={18} color="#94a3b8" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={!createPasswordEmail.trim() || isSubmitting}
+                      className="btn btn-primary"
+                      style={{ width: '100%', height: '48px', fontSize: '0.95rem', fontWeight: 800, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', boxShadow: '0 4px 14px rgba(234, 88, 12, 0.35)' }}
+                    >
+                      {isSubmitting ? <RefreshCw size={18} className="animate-spin" /> : null}
+                      {isSubmitting ? 'Verifying Email Registration...' : 'SEND VERIFICATION CODE'}
+                    </button>
+                  </form>
+
+                  <div style={{ marginTop: '1.25rem', textAlign: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => { setAuthFlowMode('LOGIN'); setLoginError(''); }}
+                      style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      ← Back to Login
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* FLOW 3: CREATE PASSWORD - STEP 2 OTP VERIFICATION */}
+              {authFlowMode === 'CREATE_PASSWORD_OTP' && (
                 <>
                   <div style={{ marginBottom: '1.25rem', textAlign: 'center' }}>
                     <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#fff7ed', border: '2px solid #fed7aa', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#ea580c', marginBottom: '0.5rem' }}>
                       <Mail size={24} />
                     </div>
-                    <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.25rem' }}>
+                    <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.25rem' }}>
                       A verification code has been sent to your email.
                     </h2>
                     <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0, lineHeight: 1.4 }}>
-                      We sent a 6-digit code to <strong style={{ color: '#0f172a' }}>{maskedEmail}</strong>. (Expires in 5 minutes).
+                      We sent a 6-digit verification code to <strong style={{ color: '#0f172a' }}>{maskedEmail}</strong>. (Expires in 5 minutes).
                     </p>
                   </div>
 
-                  <form onSubmit={handleVerifyCode} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
+                  <form onSubmit={handleCreatePasswordVerifyOtpSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
                     <div>
                       <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '0.4rem', textAlign: 'center' }}>
                         Enter 6-Digit Code
@@ -499,8 +742,8 @@ export function App() {
                         autoFocus
                         maxLength={6}
                         placeholder="• • • • • •"
-                        value={otpCode}
-                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                        value={createPasswordOtp}
+                        onChange={(e) => setCreatePasswordOtp(e.target.value.replace(/\D/g, ''))}
                         className="input-field"
                         style={{ width: '100%', height: '52px', fontSize: '1.5rem', fontWeight: 900, textAlign: 'center', letterSpacing: '0.6rem', background: '#f8fafc', border: '2px solid #ea580c', borderRadius: '14px', color: '#0f172a' }}
                       />
@@ -508,12 +751,12 @@ export function App() {
 
                     <button
                       type="submit"
-                      disabled={otpCode.length !== 6 || isSubmitting}
+                      disabled={createPasswordOtp.length !== 6 || isSubmitting}
                       className="btn btn-primary"
                       style={{ width: '100%', height: '48px', fontSize: '0.95rem', fontWeight: 800, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', boxShadow: '0 4px 14px rgba(234, 88, 12, 0.35)' }}
                     >
                       {isSubmitting ? <RefreshCw size={18} className="animate-spin" /> : null}
-                      {isSubmitting ? 'Verifying Code...' : 'VERIFY & LOGIN'}
+                      {isSubmitting ? 'Verifying Code...' : 'VERIFY CODE'}
                     </button>
                   </form>
 
@@ -521,7 +764,7 @@ export function App() {
                     <button
                       type="button"
                       disabled={resendCooldown > 0 || isSubmitting}
-                      onClick={() => handleRequestCode()}
+                      onClick={() => handleCreatePasswordRequestOtpSubmit()}
                       className="btn btn-secondary"
                       style={{ width: '100%', padding: '0.65rem', fontSize: '0.82rem', fontWeight: 700 }}
                     >
@@ -530,18 +773,394 @@ export function App() {
 
                     <button
                       type="button"
-                      onClick={() => {
-                        setAuthStep('EMAIL');
-                        setOtpCode('');
-                        setLoginError('');
-                        setDevCodeNotification(null);
-                      }}
+                      onClick={() => { setAuthFlowMode('CREATE_PASSWORD_EMAIL'); setCreatePasswordOtp(''); setLoginError(''); }}
                       style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}
                     >
-                      ← Back to Email & Password
+                      ← Change Email
                     </button>
                   </div>
                 </>
+              )}
+
+              {/* FLOW 4: CREATE PASSWORD - STEP 3 NEW PASSWORD */}
+              {authFlowMode === 'CREATE_PASSWORD_NEW' && (
+                <>
+                  <div style={{ marginBottom: '1.25rem' }}>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.25rem' }}>
+                      Set Account Password 🔑
+                    </h2>
+                    <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0, lineHeight: 1.4 }}>
+                      Create a strong password for <strong style={{ color: '#0f172a' }}>{createPasswordEmail}</strong>.
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleCreatePasswordSetPasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '0.4rem' }}>
+                        New Password *
+                      </label>
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          type={showCreatePass ? "text" : "password"}
+                          required
+                          autoFocus
+                          placeholder="Min 8 characters"
+                          value={createPasswordNewPass}
+                          onChange={(e) => setCreatePasswordNewPass(e.target.value)}
+                          className="input-field"
+                          style={{ width: '100%', paddingLeft: '2.5rem', paddingRight: '2.5rem', fontSize: '0.95rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '12px', height: '48px' }}
+                        />
+                        <KeyRound size={18} color="#94a3b8" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+                        <button
+                          type="button"
+                          onClick={() => setShowCreatePass(!showCreatePass)}
+                          style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+                        >
+                          {showCreatePass ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '0.4rem' }}>
+                        Confirm New Password *
+                      </label>
+                      <input
+                        type={showCreatePass ? "text" : "password"}
+                        required
+                        placeholder="Re-enter password"
+                        value={createPasswordConfirmPass}
+                        onChange={(e) => setCreatePasswordConfirmPass(e.target.value)}
+                        className="input-field"
+                        style={{ width: '100%', paddingLeft: '1rem', fontSize: '0.95rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '12px', height: '48px' }}
+                      />
+                    </div>
+
+                    {/* LIVE PASSWORD STRENGTH METER */}
+                    {createPasswordNewPass && (() => {
+                      const str = getPasswordStrength(createPasswordNewPass);
+                      return (
+                        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.85rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem', fontSize: '0.78rem', fontWeight: 800 }}>
+                            <span>Password Strength:</span>
+                            <span style={{ color: str.color }}>{str.label}</span>
+                          </div>
+                          <div style={{ width: '100%', height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden', marginBottom: '0.65rem' }}>
+                            <div style={{ width: `${(str.score / 5) * 100}%`, height: '100%', background: str.color, transition: 'all 0.3s ease' }} />
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.35rem', fontSize: '0.72rem', color: '#64748b' }}>
+                            <div style={{ color: str.checks.length ? '#10b981' : '#94a3b8', fontWeight: str.checks.length ? 700 : 500 }}>
+                              {str.checks.length ? '✓' : '•'} At least 8 characters
+                            </div>
+                            <div style={{ color: str.checks.upper ? '#10b981' : '#94a3b8', fontWeight: str.checks.upper ? 700 : 500 }}>
+                              {str.checks.upper ? '✓' : '•'} Uppercase letter (A-Z)
+                            </div>
+                            <div style={{ color: str.checks.lower ? '#10b981' : '#94a3b8', fontWeight: str.checks.lower ? 700 : 500 }}>
+                              {str.checks.lower ? '✓' : '•'} Lowercase letter (a-z)
+                            </div>
+                            <div style={{ color: str.checks.number ? '#10b981' : '#94a3b8', fontWeight: str.checks.number ? 700 : 500 }}>
+                              {str.checks.number ? '✓' : '•'} Number (0-9)
+                            </div>
+                            <div style={{ color: str.checks.special ? '#10b981' : '#94a3b8', fontWeight: str.checks.special ? 700 : 500, gridColumn: 'span 2' }}>
+                              {str.checks.special ? '✓' : '•'} Special character (!@#$%^&*)
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    <button
+                      type="submit"
+                      disabled={!createPasswordNewPass || !createPasswordConfirmPass || isSubmitting}
+                      className="btn btn-primary"
+                      style={{ width: '100%', height: '48px', fontSize: '0.95rem', fontWeight: 800, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', boxShadow: '0 4px 14px rgba(234, 88, 12, 0.35)' }}
+                    >
+                      {isSubmitting ? <RefreshCw size={18} className="animate-spin" /> : null}
+                      {isSubmitting ? 'Creating Password...' : 'CREATE PASSWORD'}
+                    </button>
+                  </form>
+                </>
+              )}
+
+              {/* FLOW 5: CREATE PASSWORD - SUCCESS */}
+              {authFlowMode === 'CREATE_PASSWORD_SUCCESS' && (
+                <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                  <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#ecfdf5', border: '2px solid #a7f3d0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#047857', marginBottom: '1rem' }}>
+                    <CheckCircle2 size={36} />
+                  </div>
+                  <h2 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0f172a', margin: '0 0 0.5rem' }}>
+                    Password Created Successfully! 🎉
+                  </h2>
+                  <p style={{ fontSize: '0.85rem', color: '#475569', margin: '0 0 1.5rem', lineHeight: 1.5 }}>
+                    Your Café account password has been created and your email has been verified. You can now log in.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthFlowMode('LOGIN');
+                      setStudentEmail(createPasswordEmail);
+                      setLoginError('');
+                      setAuthSuccessMessage('');
+                    }}
+                    className="btn btn-primary"
+                    style={{ width: '100%', height: '48px', fontSize: '0.95rem', fontWeight: 800, borderRadius: '12px' }}
+                  >
+                    GO TO LOGIN
+                  </button>
+                </div>
+              )}
+
+              {/* FLOW 6: FORGOT PASSWORD - STEP 1 EMAIL */}
+              {authFlowMode === 'FORGOT_PASSWORD_EMAIL' && (
+                <>
+                  <div style={{ marginBottom: '1.25rem' }}>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.25rem' }}>
+                      Reset Your Password 🔑
+                    </h2>
+                    <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0, lineHeight: 1.4 }}>
+                      Enter your registered institutional email address to receive a 6-digit reset code.
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleForgotPasswordRequestOtpSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '0.4rem' }}>
+                        Registered Institutional Email
+                      </label>
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          type="email"
+                          required
+                          autoFocus
+                          placeholder="student@saec.ac.in"
+                          value={forgotPasswordEmail}
+                          onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                          className="input-field"
+                          style={{ width: '100%', paddingLeft: '2.5rem', fontSize: '0.95rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '12px', height: '48px' }}
+                        />
+                        <Mail size={18} color="#94a3b8" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={!forgotPasswordEmail.trim() || isSubmitting}
+                      className="btn btn-primary"
+                      style={{ width: '100%', height: '48px', fontSize: '0.95rem', fontWeight: 800, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', boxShadow: '0 4px 14px rgba(234, 88, 12, 0.35)' }}
+                    >
+                      {isSubmitting ? <RefreshCw size={18} className="animate-spin" /> : null}
+                      {isSubmitting ? 'Sending Reset Code...' : 'SEND RESET CODE'}
+                    </button>
+                  </form>
+
+                  <div style={{ marginTop: '1.25rem', textAlign: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => { setAuthFlowMode('LOGIN'); setLoginError(''); }}
+                      style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      ← Back to Login
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* FLOW 7: FORGOT PASSWORD - STEP 2 OTP */}
+              {authFlowMode === 'FORGOT_PASSWORD_OTP' && (
+                <>
+                  <div style={{ marginBottom: '1.25rem', textAlign: 'center' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#fff7ed', border: '2px solid #fed7aa', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#ea580c', marginBottom: '0.5rem' }}>
+                      <Mail size={24} />
+                    </div>
+                    <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.25rem' }}>
+                      Enter Reset Verification Code
+                    </h2>
+                    <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0, lineHeight: 1.4 }}>
+                      We sent a 6-digit reset code to <strong style={{ color: '#0f172a' }}>{maskedEmail}</strong>. (Expires in 5 minutes).
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleForgotPasswordVerifyOtpSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '0.4rem', textAlign: 'center' }}>
+                        Enter 6-Digit Code
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        autoFocus
+                        maxLength={6}
+                        placeholder="• • • • • •"
+                        value={forgotPasswordOtp}
+                        onChange={(e) => setForgotPasswordOtp(e.target.value.replace(/\D/g, ''))}
+                        className="input-field"
+                        style={{ width: '100%', height: '52px', fontSize: '1.5rem', fontWeight: 900, textAlign: 'center', letterSpacing: '0.6rem', background: '#f8fafc', border: '2px solid #ea580c', borderRadius: '14px', color: '#0f172a' }}
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={forgotPasswordOtp.length !== 6 || isSubmitting}
+                      className="btn btn-primary"
+                      style={{ width: '100%', height: '48px', fontSize: '0.95rem', fontWeight: 800, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', boxShadow: '0 4px 14px rgba(234, 88, 12, 0.35)' }}
+                    >
+                      {isSubmitting ? <RefreshCw size={18} className="animate-spin" /> : null}
+                      {isSubmitting ? 'Verifying Code...' : 'VERIFY CODE'}
+                    </button>
+                  </form>
+
+                  <div style={{ marginTop: '1.25rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', borderTop: '1px solid #f1f5f9', paddingTop: '1.15rem' }}>
+                    <button
+                      type="button"
+                      disabled={resendCooldown > 0 || isSubmitting}
+                      onClick={() => handleForgotPasswordRequestOtpSubmit()}
+                      className="btn btn-secondary"
+                      style={{ width: '100%', padding: '0.65rem', fontSize: '0.82rem', fontWeight: 700 }}
+                    >
+                      {resendCooldown > 0 ? `Resend Code in 00:${resendCooldown < 10 ? '0' : ''}${resendCooldown}` : 'Resend Code'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => { setAuthFlowMode('FORGOT_PASSWORD_EMAIL'); setForgotPasswordOtp(''); setLoginError(''); }}
+                      style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      ← Change Email
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* FLOW 8: FORGOT PASSWORD - STEP 3 NEW PASSWORD */}
+              {authFlowMode === 'FORGOT_PASSWORD_NEW' && (
+                <>
+                  <div style={{ marginBottom: '1.25rem' }}>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.25rem' }}>
+                      Reset Password 🔑
+                    </h2>
+                    <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0, lineHeight: 1.4 }}>
+                      Enter a new password for <strong style={{ color: '#0f172a' }}>{forgotPasswordEmail}</strong>.
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleForgotPasswordSetPasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '0.4rem' }}>
+                        New Password *
+                      </label>
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          type={showForgotPass ? "text" : "password"}
+                          required
+                          autoFocus
+                          placeholder="Min 8 characters"
+                          value={forgotPasswordNewPass}
+                          onChange={(e) => setForgotPasswordNewPass(e.target.value)}
+                          className="input-field"
+                          style={{ width: '100%', paddingLeft: '2.5rem', paddingRight: '2.5rem', fontSize: '0.95rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '12px', height: '48px' }}
+                        />
+                        <KeyRound size={18} color="#94a3b8" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+                        <button
+                          type="button"
+                          onClick={() => setShowForgotPass(!showForgotPass)}
+                          style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+                        >
+                          {showForgotPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '0.4rem' }}>
+                        Confirm New Password *
+                      </label>
+                      <input
+                        type={showForgotPass ? "text" : "password"}
+                        required
+                        placeholder="Re-enter new password"
+                        value={forgotPasswordConfirmPass}
+                        onChange={(e) => setForgotPasswordConfirmPass(e.target.value)}
+                        className="input-field"
+                        style={{ width: '100%', paddingLeft: '1rem', fontSize: '0.95rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '12px', height: '48px' }}
+                      />
+                    </div>
+
+                    {/* LIVE PASSWORD STRENGTH METER */}
+                    {forgotPasswordNewPass && (() => {
+                      const str = getPasswordStrength(forgotPasswordNewPass);
+                      return (
+                        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.85rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem', fontSize: '0.78rem', fontWeight: 800 }}>
+                            <span>Password Strength:</span>
+                            <span style={{ color: str.color }}>{str.label}</span>
+                          </div>
+                          <div style={{ width: '100%', height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden', marginBottom: '0.65rem' }}>
+                            <div style={{ width: `${(str.score / 5) * 100}%`, height: '100%', background: str.color, transition: 'all 0.3s ease' }} />
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.35rem', fontSize: '0.72rem', color: '#64748b' }}>
+                            <div style={{ color: str.checks.length ? '#10b981' : '#94a3b8', fontWeight: str.checks.length ? 700 : 500 }}>
+                              {str.checks.length ? '✓' : '•'} At least 8 characters
+                            </div>
+                            <div style={{ color: str.checks.upper ? '#10b981' : '#94a3b8', fontWeight: str.checks.upper ? 700 : 500 }}>
+                              {str.checks.upper ? '✓' : '•'} Uppercase letter (A-Z)
+                            </div>
+                            <div style={{ color: str.checks.lower ? '#10b981' : '#94a3b8', fontWeight: str.checks.lower ? 700 : 500 }}>
+                              {str.checks.lower ? '✓' : '•'} Lowercase letter (a-z)
+                            </div>
+                            <div style={{ color: str.checks.number ? '#10b981' : '#94a3b8', fontWeight: str.checks.number ? 700 : 500 }}>
+                              {str.checks.number ? '✓' : '•'} Number (0-9)
+                            </div>
+                            <div style={{ color: str.checks.special ? '#10b981' : '#94a3b8', fontWeight: str.checks.special ? 700 : 500, gridColumn: 'span 2' }}>
+                              {str.checks.special ? '✓' : '•'} Special character (!@#$%^&*)
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    <button
+                      type="submit"
+                      disabled={!forgotPasswordNewPass || !forgotPasswordConfirmPass || isSubmitting}
+                      className="btn btn-primary"
+                      style={{ width: '100%', height: '48px', fontSize: '0.95rem', fontWeight: 800, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', boxShadow: '0 4px 14px rgba(234, 88, 12, 0.35)' }}
+                    >
+                      {isSubmitting ? <RefreshCw size={18} className="animate-spin" /> : null}
+                      {isSubmitting ? 'Resetting Password...' : 'RESET PASSWORD'}
+                    </button>
+                  </form>
+                </>
+              )}
+
+              {/* FLOW 9: FORGOT PASSWORD - SUCCESS */}
+              {authFlowMode === 'FORGOT_PASSWORD_SUCCESS' && (
+                <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                  <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#ecfdf5', border: '2px solid #a7f3d0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#047857', marginBottom: '1rem' }}>
+                    <CheckCircle2 size={36} />
+                  </div>
+                  <h2 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0f172a', margin: '0 0 0.5rem' }}>
+                    Password Reset Successfully! 🎉
+                  </h2>
+                  <p style={{ fontSize: '0.85rem', color: '#475569', margin: '0 0 1.5rem', lineHeight: 1.5 }}>
+                    Your password has been updated. You can now log in with your new password.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthFlowMode('LOGIN');
+                      setStudentEmail(forgotPasswordEmail);
+                      setLoginError('');
+                      setAuthSuccessMessage('');
+                    }}
+                    className="btn btn-primary"
+                    style={{ width: '100%', height: '48px', fontSize: '0.95rem', fontWeight: 800, borderRadius: '12px' }}
+                  >
+                    GO TO LOGIN
+                  </button>
+                </div>
               )}
             </>
           )}

@@ -10,6 +10,8 @@ export interface User {
   role: UserRole;
   status: UserAccountStatus;
   must_change_password: boolean;
+  password_created?: boolean;
+  email_verified?: boolean;
   is_active: boolean;
   is_demo?: boolean;
   is_email_linked?: boolean;

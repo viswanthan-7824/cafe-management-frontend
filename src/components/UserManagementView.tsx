@@ -1452,9 +1452,11 @@ export const UserManagementView: React.FC = () => {
                       <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800 }}>Full Name & Role</th>
                       <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800 }}>Register No / ID</th>
                       <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800 }}>Class & Dept</th>
-                      <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800 }}>Google Email</th>
-                      <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800 }}>Status</th>
-                      <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: 800 }}>Actions</th>
+                      <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800 }}>Email</th>
+                      <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800 }}>Password Status</th>
+                      <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800 }}>Email Status</th>
+                      <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight 800 }}>Account Status</th>
+                      <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight 800 }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1513,7 +1515,25 @@ export const UserManagementView: React.FC = () => {
                             )}
                           </td>
 
-                          {/* Status */}
+                          {/* Password Status */}
+                          <td style={{ padding: '0.75rem 1rem' }}>
+                            {u.password_created ? (
+                              <span className="badge badge-green">✓ Password Created</span>
+                            ) : (
+                              <span className="badge badge-yellow">⚠️ Password Not Created</span>
+                            )}
+                          </td>
+
+                          {/* Email Status */}
+                          <td style={{ padding: '0.75rem 1rem' }}>
+                            {u.email_verified ? (
+                              <span className="badge badge-green">✓ Verified</span>
+                            ) : (
+                              <span className="badge badge-gray">Not Verified</span>
+                            )}
+                          </td>
+
+                          {/* Account Status */}
                           <td style={{ padding: '0.75rem 1rem' }}>
                             <span className={
                               u.status === 'ACTIVE' ? 'badge badge-green' :

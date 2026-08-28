@@ -527,6 +527,33 @@ export const api = {
     return await res.json();
   },
 
+  async createOrder(payload: any): Promise<Order> {
+    const items = (payload.items_data || payload.items || []).map((it: any) => ({
+      product_id: it.product_id,
+      quantity: it.quantity
+    }));
+    return this.createCustomerOrder({
+      items,
+      pickup_time: payload.pickup_time,
+      notes: payload.notes,
+      customer_type: payload.customer_type,
+      payment_method: payload.payment_method
+    });
+  },
+
+  async createPaymentSupportTicket(payload: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/payment-support/tickets/`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || err.error || 'Failed to submit ticket');
+    }
+    return await res.json();
+  },
+
   async createCustomerOrder(payload: {
     items: { product_id: number; quantity: number }[];
     pickup_time?: string;

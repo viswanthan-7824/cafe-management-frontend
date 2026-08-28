@@ -121,6 +121,34 @@ export const api = {
     }
   },
 
+  async requestLoginCode(email: string): Promise<{ message: string; masked_email: string; resend_cooldown: number; dev_code?: string }> {
+    const res = await fetch(`${API_BASE_URL}/auth/request-code/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.trim().toLowerCase() })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || err.detail || 'Failed to request login code.');
+    }
+    return await res.json();
+  },
+
+  async verifyLoginCode(email: string, code: string): Promise<{ token: string; user: User }> {
+    const res = await fetch(`${API_BASE_URL}/auth/verify-code/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.trim().toLowerCase(), code: code.trim() })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || err.detail || 'Failed to verify login code.');
+    }
+    const data = await res.json();
+    setAuthToken(data.token);
+    return { token: data.token, user: data.user };
+  },
+
   async requestRegistrationOtp(email: string): Promise<{
     message: string;
     email: string;

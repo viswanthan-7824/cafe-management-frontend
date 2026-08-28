@@ -865,7 +865,7 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
                         {/* Availability Status Badge */}
                         <div style={{ position: 'absolute', bottom: '10px', right: '10px' }}>
                           {isOutOfStock ? (
-                            <span className="badge badge-danger">Out of Stock</span>
+                            <span className="badge badge-danger">Currently unavailable</span>
                           ) : product.availability_status === 'LOW_STOCK' ? (
                             <span className="badge badge-warning">Low Stock ({product.current_stock})</span>
                           ) : (
@@ -932,17 +932,17 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
                             <button
                               disabled
                               style={{
-                                background: '#f1f5f9',
-                                color: '#94a3b8',
-                                border: '1px solid #e2e8f0',
+                                background: '#fef2f2',
+                                color: '#ef4444',
+                                border: '1px solid #fecaca',
                                 padding: '0.45rem 0.85rem',
                                 borderRadius: '8px',
-                                fontSize: '0.8rem',
+                                fontSize: '0.75rem',
                                 fontWeight: 700,
                                 cursor: 'not-allowed'
                               }}
                             >
-                              Sold Out
+                              Currently unavailable
                             </button>
                           ) : cartItem ? (
                             <div

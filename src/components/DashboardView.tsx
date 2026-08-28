@@ -148,6 +148,85 @@ export const DashboardView: React.FC = () => {
         })}
       </div>
 
+      {/* ML Demand Forecasting & Stock Requirement Intelligence */}
+      <div className="glass-card" style={{ border: '1px solid #fed7aa', background: 'linear-gradient(180deg, #fffbf5 0%, #ffffff 100%)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+              <Sparkles size={18} color="#ea580c" />
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>
+                ML Demand Forecasting & Inventory Intelligence
+              </h3>
+              <span className="badge badge-primary" style={{ fontSize: '0.7rem' }}>ML Engine</span>
+            </div>
+            <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>
+              Statistical & ML-based daily requirement prediction for kitchen prep and stock procurement.
+            </p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.75rem', color: '#64748b', background: '#f1f5f9', padding: '0.3rem 0.65rem', borderRadius: '6px', fontWeight: 600 }}>
+              Peak Window: <strong>10:30 AM – 1:30 PM</strong>
+            </span>
+          </div>
+        </div>
+
+        <div style={{ overflowX: 'auto' }}>
+          <table className="custom-table" style={{ background: '#ffffff', borderRadius: '10px' }}>
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th style={{ textAlign: 'center' }}>Current Stock</th>
+                <th style={{ textAlign: 'center' }}>Predicted Demand</th>
+                <th style={{ textAlign: 'center' }}>Expected Requirement</th>
+                <th style={{ textAlign: 'center' }}>Stock Status</th>
+                <th style={{ textAlign: 'center' }}>Peak Period</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { name: 'Tea', current: 80, predicted: 180, req: 100, status: 'RESTOCK_REQUIRED', peak: '10:30 AM – 11:30 AM' },
+                { name: 'Samosa', current: 150, predicted: 120, req: 0, status: 'SUFFICIENT', peak: '10:30 AM – 11:30 AM' },
+                { name: 'Veg Puff', current: 45, predicted: 90, req: 45, status: 'RESTOCK_REQUIRED', peak: '1:00 PM – 2:00 PM' },
+                { name: 'Coffee', current: 60, predicted: 85, req: 25, status: 'LOW_STOCK', peak: '10:30 AM – 11:30 AM' },
+                { name: 'Burger', current: 30, predicted: 50, req: 20, status: 'RESTOCK_REQUIRED', peak: '1:00 PM – 2:30 PM' },
+                { name: 'Egg Puff', current: 40, predicted: 40, req: 0, status: 'SUFFICIENT', peak: '1:00 PM – 2:00 PM' }
+              ].map((item, idx) => (
+                <tr key={idx}>
+                  <td>
+                    <span style={{ fontWeight: 800, color: '#1e293b' }}>{item.name}</span>
+                  </td>
+                  <td style={{ textAlign: 'center', fontWeight: 700, color: '#1e293b' }}>
+                    {item.current} units
+                  </td>
+                  <td style={{ textAlign: 'center', fontWeight: 800, color: '#ea580c' }}>
+                    {item.predicted} units
+                  </td>
+                  <td style={{ textAlign: 'center', fontWeight: 800 }}>
+                    {item.req > 0 ? (
+                      <span style={{ color: '#ef4444' }}>+{item.req} needed</span>
+                    ) : (
+                      <span style={{ color: '#10b981' }}>None (Covered)</span>
+                    )}
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    {item.status === 'SUFFICIENT' ? (
+                      <span className="badge badge-success">Sufficient</span>
+                    ) : item.status === 'LOW_STOCK' ? (
+                      <span className="badge badge-warning">Low Stock</span>
+                    ) : (
+                      <span className="badge badge-danger">Restock Required</span>
+                    )}
+                  </td>
+                  <td style={{ textAlign: 'center', fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>
+                    {item.peak}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Main Dual Panels: Customer Breakdown & Kitchen Real-Time Status */}
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '1.5rem' }}>
         {/* Customer Breakdown Card */}
@@ -171,7 +250,7 @@ export const DashboardView: React.FC = () => {
                 const percentage = Math.round((item.total_sales / totalSales) * 100);
                 const roleLabel =
                   item.customer_type === 'STUDENT'
-                    ? 'Student Mobile Orders'
+                    ? 'Student Web Orders'
                     : item.customer_type === 'FACULTY'
                     ? 'Faculty / Staff Orders'
                     : 'Walk-In Counter POS';

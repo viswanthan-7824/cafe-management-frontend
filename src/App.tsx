@@ -1,19 +1,22 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
-import { DashboardView } from './components/DashboardView';
-import { FoodManagementView } from './components/FoodManagementView';
-import { UserManagementView } from './components/UserManagementView';
-import { OrderManagementView } from './components/OrderManagementView';
-import { SystemSettingsView } from './components/SystemSettingsView';
-import { CalendarManager } from './components/CalendarManager';
-import { PosView } from './components/PosView';
-import { FcfsQueueView } from './components/FcfsQueueView';
-import { ContactOrdersView } from './components/ContactOrdersView';
-import { PaymentSupportView } from './components/PaymentSupportView';
-import { InventoryView } from './components/InventoryView';
-import { AnalyticsView } from './components/AnalyticsView';
-import { StudentOrderingView } from './components/StudentOrderingView';
+
+// Code-split dynamic lazy imports for instant initial loading & optimal chunk sizes
+const DashboardView = lazy(() => import('./components/DashboardView').then(m => ({ default: m.DashboardView })));
+const FoodManagementView = lazy(() => import('./components/FoodManagementView').then(m => ({ default: m.FoodManagementView })));
+const UserManagementView = lazy(() => import('./components/UserManagementView').then(m => ({ default: m.UserManagementView })));
+const OrderManagementView = lazy(() => import('./components/OrderManagementView').then(m => ({ default: m.OrderManagementView })));
+const SystemSettingsView = lazy(() => import('./components/SystemSettingsView').then(m => ({ default: m.SystemSettingsView })));
+const CalendarManager = lazy(() => import('./components/CalendarManager').then(m => ({ default: m.CalendarManager })));
+const PosView = lazy(() => import('./components/PosView').then(m => ({ default: m.PosView })));
+const FcfsQueueView = lazy(() => import('./components/FcfsQueueView').then(m => ({ default: m.FcfsQueueView })));
+const ContactOrdersView = lazy(() => import('./components/ContactOrdersView').then(m => ({ default: m.ContactOrdersView })));
+const PaymentSupportView = lazy(() => import('./components/PaymentSupportView').then(m => ({ default: m.PaymentSupportView })));
+const InventoryView = lazy(() => import('./components/InventoryView').then(m => ({ default: m.InventoryView })));
+const AnalyticsView = lazy(() => import('./components/AnalyticsView').then(m => ({ default: m.AnalyticsView })));
+const StudentOrderingView = lazy(() => import('./components/StudentOrderingView').then(m => ({ default: m.StudentOrderingView })));
+
 import { api, setAuthToken } from './services/api';
 import type { User } from './types';
 import {
@@ -1364,7 +1367,16 @@ export function App() {
   // 2. STUDENT & FACULTY USER PORTAL
   if (user.role === 'STUDENT' || user.role === 'FACULTY') {
     return (
-      <>
+      <Suspense
+        fallback={
+          <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
+            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.85rem' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '50%', border: '3px solid #fed7aa', borderTopColor: '#ea580c', animation: 'spin 0.8s linear infinite' }} />
+              <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#1e293b' }}>Loading SAEC CAFÉ...</div>
+            </div>
+          </div>
+        }
+      >
         <StudentOrderingView
           user={user}
           businessStatus={businessStatus}
@@ -1438,7 +1450,7 @@ export function App() {
             </div>
           </div>
         )}
-      </>
+      </Suspense>
     );
   }
 
@@ -1461,18 +1473,32 @@ export function App() {
         />
 
         <main style={{ flex: 1, padding: '1.75rem 2rem', overflowX: 'hidden' }}>
-          {activeTab === 'dashboard' && <DashboardView />}
-          {activeTab === 'food' && <FoodManagementView />}
-          {activeTab === 'inventory' && <InventoryView />}
-          {activeTab === 'orders' && <OrderManagementView userRole={user.role} />}
-          {activeTab === 'pos' && <PosView />}
-          {activeTab === 'fcfs' && <FcfsQueueView />}
-          {activeTab === 'contact' && <ContactOrdersView />}
-          {activeTab === 'users' && <UserManagementView />}
-          {activeTab === 'calendar' && <CalendarManager />}
-          {activeTab === 'payment-support' && <PaymentSupportView />}
-          {activeTab === 'analytics' && <AnalyticsView />}
-          {activeTab === 'settings' && <SystemSettingsView />}
+          <Suspense
+            fallback={
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1rem 0' }}>
+                <div className="skeleton" style={{ height: '70px', borderRadius: '16px' }} />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
+                  {[1, 2, 3, 4].map(n => (
+                    <div key={n} className="skeleton" style={{ height: '120px', borderRadius: '16px' }} />
+                  ))}
+                </div>
+                <div className="skeleton" style={{ height: '350px', borderRadius: '16px' }} />
+              </div>
+            }
+          >
+            {activeTab === 'dashboard' && <DashboardView />}
+            {activeTab === 'food' && <FoodManagementView />}
+            {activeTab === 'inventory' && <InventoryView />}
+            {activeTab === 'orders' && <OrderManagementView userRole={user.role} />}
+            {activeTab === 'pos' && <PosView />}
+            {activeTab === 'fcfs' && <FcfsQueueView />}
+            {activeTab === 'contact' && <ContactOrdersView />}
+            {activeTab === 'users' && <UserManagementView />}
+            {activeTab === 'calendar' && <CalendarManager />}
+            {activeTab === 'payment-support' && <PaymentSupportView />}
+            {activeTab === 'analytics' && <AnalyticsView />}
+            {activeTab === 'settings' && <SystemSettingsView />}
+          </Suspense>
         </main>
       </div>
 

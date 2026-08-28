@@ -1207,11 +1207,11 @@ export const api = {
     return settings;
   },
 
-  async chatWithAssistant(prompt: string): Promise<any> {
+  async chatWithAssistant(prompt: string, history?: any[]): Promise<any> {
     const res = await fetch(`${API_BASE_URL}/assistant/chat/`, {
       method: 'POST',
       headers: authHeaders(),
-      body: JSON.stringify({ prompt })
+      body: JSON.stringify({ prompt, history: history || [] })
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));

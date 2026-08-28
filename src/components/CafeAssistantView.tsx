@@ -16,7 +16,8 @@ import {
   Zap,
   Coffee,
   Check,
-  X
+  X,
+  HelpCircle
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -28,6 +29,7 @@ interface ChatMessage {
   cardType?: string;
   actionPreview?: any;
   ambiguousData?: any;
+  clarificationData?: any;
   pdfData?: any;
   forecastData?: any;
   inventoryData?: any;
@@ -40,7 +42,7 @@ export const CafeAssistantView: React.FC = () => {
       id: 'welcome',
       sender: 'assistant',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      text: "Hello! I am your **SAEC CAFÉ Operations Assistant**. How can I help you manage inventory, products, orders, or reports today?",
+      text: "Hi! I'm your Café Assistant. Ask me anything about the canteen.",
       cardType: 'WELCOME'
     }
   ]);
@@ -51,13 +53,14 @@ export const CafeAssistantView: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const suggestedCommands = [
-    "How many Bovonto bottles are remaining?",
-    "Add 50 samosas to stock",
-    "Show low-stock products",
-    "How many orders were completed today?",
-    "Generate today's report as PDF",
-    "What should I prepare tomorrow?",
-    "Show today's revenue"
+    "Is the canteen open today?",
+    "What is today's revenue?",
+    "How many burgers were sold?",
+    "How much samosa stock is remaining?",
+    "Which product sold the most today?",
+    "What should we restock?",
+    "Declare tomorrow as a holiday",
+    "Generate today's report as PDF"
   ];
 
   useEffect(() => {
@@ -75,12 +78,20 @@ export const CafeAssistantView: React.FC = () => {
       text: prompt
     };
 
+    // Format context history for backend LLM
+    const historyPayload = messages
+      .filter((m) => m.id !== 'welcome')
+      .map((m) => ({
+        role: m.sender === 'user' ? 'user' : 'model',
+        text: m.text
+      }));
+
     setMessages((prev) => [...prev, userMsg]);
     setInputPrompt('');
     setIsSending(true);
 
     try {
-      const res = await api.chatWithAssistant(prompt);
+      const res = await api.chatWithAssistant(prompt, historyPayload);
 
       const assistantMsg: ChatMessage = {
         id: `assistant-${Date.now()}`,
@@ -90,6 +101,7 @@ export const CafeAssistantView: React.FC = () => {
         cardType: res.card_type,
         actionPreview: res.action_preview,
         ambiguousData: res.ambiguous_data,
+        clarificationData: res.clarification_data,
         pdfData: res.pdf_data,
         forecastData: res.data && res.card_type === 'FORECAST_TABLE' ? res.data : undefined,
         inventoryData: res.data && (res.card_type === 'INVENTORY_LIST' || res.card_type === 'PRODUCT_STOCK_CARD') ? res.data : undefined
@@ -154,11 +166,11 @@ export const CafeAssistantView: React.FC = () => {
           </div>
           <div>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#1e293b', margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              SAEC CAFÉ Operations Assistant
+              SAEC CAFÉ Canteen Assistant
               <span className="badge badge-primary" style={{ fontSize: '0.68rem' }}>AI Powered</span>
             </h2>
             <p style={{ fontSize: '0.78rem', color: '#64748b', margin: '0.15rem 0 0 0' }}>
-              Natural language inventory, stock updates, sales queries, ML predictions & PDF report generation.
+              Dynamic natural language query, live order stats, inventory tool execution & PDF report generator.
             </p>
           </div>
         </div>
@@ -240,17 +252,20 @@ export const CafeAssistantView: React.FC = () => {
 
                     <div style={{ background: '#ffffff', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid #ffedd5', marginBottom: '0.85rem' }}>
                       <div style={{ fontWeight: 900, fontSize: '1rem', color: '#1e293b' }}>
-                        {msg.actionPreview.product_name}
+                        {msg.actionPreview.product_name || msg.actionPreview.date || 'Canteen Action'}
                       </div>
-                      <div style={{ display: 'flex', gap: '1.25rem', marginTop: '0.4rem', fontSize: '0.82rem' }}>
+                      <div style={{ display: 'flex', gap: '1.25rem', marginTop: '0.4rem', fontSize: '0.82rem', flexWrap: 'wrap' }}>
                         {msg.actionPreview.current_stock !== undefined && (
                           <span>Current Stock: <strong>{msg.actionPreview.current_stock}</strong></span>
                         )}
                         {msg.actionPreview.new_stock !== undefined && (
                           <span>New Stock: <strong style={{ color: '#ea580c' }}>{msg.actionPreview.new_stock}</strong></span>
                         )}
-                        {msg.actionPreview.price !== undefined && (
-                          <span>Price: <strong>₹{msg.actionPreview.price}</strong></span>
+                        {msg.actionPreview.date && (
+                          <span>Date: <strong>{msg.actionPreview.date}</strong></span>
+                        )}
+                        {msg.actionPreview.reason && (
+                          <span>Reason: <strong>{msg.actionPreview.reason}</strong></span>
                         )}
                       </div>
                     </div>
@@ -285,7 +300,41 @@ export const CafeAssistantView: React.FC = () => {
                   </div>
                 )}
 
-                {/* Card Type 3: Ambiguous Product Selector */}
+                {/* Card Type 3: Clarification Card */}
+                {msg.cardType === 'CLARIFICATION_CARD' && msg.clarificationData && (
+                  <div style={{ marginTop: '0.85rem', paddingTop: '0.85rem', borderTop: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#ea580c', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <HelpCircle size={14} /> Clarification Options:
+                    </div>
+                    {msg.clarificationData.options?.map((opt: any, idx: number) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          if (opt.action === 'DISABLE_TODAY') {
+                            handleSendCommand(`Make ${opt.label.split(' ')[1] || 'item'} unavailable for today`);
+                          } else {
+                            handleSendCommand(`Remove ${opt.label.split(' ')[1] || 'item'} permanently`);
+                          }
+                        }}
+                        style={{
+                          padding: '0.6rem 0.85rem',
+                          borderRadius: '8px',
+                          border: '1px solid #fed7aa',
+                          background: '#fff7ed',
+                          color: '#1e293b',
+                          fontWeight: 700,
+                          fontSize: '0.82rem',
+                          cursor: 'pointer',
+                          textAlign: 'left'
+                        }}
+                      >
+                        • {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Card Type 4: Ambiguous Product Selector */}
                 {msg.cardType === 'AMBIGUOUS_PRODUCT_SELECTOR' && msg.ambiguousData && (
                   <div style={{ marginTop: '0.85rem', paddingTop: '0.85rem', borderTop: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {msg.ambiguousData.options?.map((opt: any) => (
@@ -320,9 +369,9 @@ export const CafeAssistantView: React.FC = () => {
           ))}
 
           {isSending && (
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', color: '#64748b', fontSize: '0.8rem', paddingLeft: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', color: '#ea580c', fontSize: '0.82rem', paddingLeft: '0.5rem', fontWeight: 700 }}>
               <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: '2px solid #fed7aa', borderTopColor: '#ea580c', animation: 'spin 0.8s linear infinite' }} />
-              Café Assistant is analyzing database tools...
+              Café Assistant is processing database query...
             </div>
           )}
 
@@ -363,7 +412,7 @@ export const CafeAssistantView: React.FC = () => {
           >
             <input
               type="text"
-              placeholder="Ask a question or enter a command (e.g. Add 50 samosas, How much Bovonto is left?)..."
+              placeholder="Ask me anything about the canteen (e.g. Is canteen open today?, What is today's revenue?, Set samosa stock to 100)..."
               value={inputPrompt}
               onChange={(e) => setInputPrompt(e.target.value)}
               disabled={isSending}

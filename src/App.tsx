@@ -31,6 +31,7 @@ import {
   Shield,
   ShieldCheck,
   Info,
+  UserPlus,
   X
 } from 'lucide-react';
 
@@ -50,9 +51,7 @@ declare global {
 
 type AuthMode =
   | 'STUDENT_LOGIN'
-  | 'STUDENT_REGISTER_STEP1'
-  | 'STUDENT_REGISTER_STEP2'
-  | 'STUDENT_REGISTER_STEP3'
+  | 'STUDENT_REGISTER'
   | 'ADMIN_LOGIN'
   | 'ADMIN_FORGOT_PASSWORD'
   | 'ADMIN_RESET_CONFIRM';
@@ -75,20 +74,17 @@ export function App() {
   const [studentPassword, setStudentPassword] = useState('');
   const [showStudentPassword, setShowStudentPassword] = useState(false);
 
-  // Student Multi-Factor Registration State (Excel Email + Gmail OTP + Admin OTP for viswanthan7824 + Password Gen)
-  const [regEmail, setRegEmail] = useState('');
+  // Direct Student / Faculty Registration State (No OTP required)
   const [regFullName, setRegFullName] = useState('');
-  const [regRole, setRegRole] = useState('STUDENT');
-  const [regClassName, setRegClassName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regRole, setRegRole] = useState<'STUDENT' | 'FACULTY'>('STUDENT');
   const [regCollegeId, setRegCollegeId] = useState('');
-  const [regGmailOtp, setRegGmailOtp] = useState('');
-  const [regAdminOtp, setRegAdminOtp] = useState('');
-  const [regVerificationToken, setRegVerificationToken] = useState('');
+  const [regDepartment, setRegDepartment] = useState('CSE');
+  const [regYear, setRegYear] = useState<number>(4);
+  const [regMobile, setRegMobile] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
   const [showRegPassword, setShowRegPassword] = useState(false);
-  const [simulationGmailOtp, setSimulationGmailOtp] = useState('');
-  const [simulationAdminOtp, setSimulationAdminOtp] = useState('');
 
   // Admin Login Form State
   const [adminEmail, setAdminEmail] = useState('');
@@ -265,74 +261,41 @@ export function App() {
     }
   };
 
-  // Student Register Step 1: Request OTP (Verifies against class Excel roster)
-  const handleRequestRegistrationOtp = async (e: React.FormEvent) => {
+  // Direct Registration (No OTP required, verifies pre-approved Excel/Admin record)
+  const handleDirectRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!regEmail.trim()) return;
-
-    setIsSubmitting(true);
-    setLoginError('');
-    setAuthSuccessMessage('');
-    try {
-      const res = await api.requestRegistrationOtp(regEmail.trim());
-      if (res.is_registered) {
-        setAuthSuccessMessage('This account is already registered! Please sign in using your password.');
-        setStudentEmail(regEmail.trim());
-        setAuthMode('STUDENT_LOGIN');
-        return;
-      }
-      setRegFullName(res.full_name || '');
-      setRegRole(res.role || 'STUDENT');
-      setRegClassName(res.class_name || '');
-      setRegCollegeId(res.college_id || '');
-      setSimulationGmailOtp(res.simulation_gmail_otp || '');
-      setSimulationAdminOtp(res.simulation_admin_otp || '');
-      setAuthSuccessMessage(`Gmail OTP sent to ${regEmail.trim()}. Admin Approval OTP has been generated for administrator account (viswanthan7824).`);
-      setAuthMode('STUDENT_REGISTER_STEP2');
-    } catch (err: any) {
-      setLoginError(err.message || 'This email is not found in the approved class roster.');
-    } finally {
-      setIsSubmitting(false);
+    if (!regFullName.trim()) {
+      setLoginError('Please enter your full name.');
+      return;
     }
-  };
-
-  // Student Register Step 2: Verify Dual OTPs
-  const handleVerifyRegistrationOtps = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!regGmailOtp.trim() || !regAdminOtp.trim()) return;
-
-    setIsSubmitting(true);
-    setLoginError('');
-    setAuthSuccessMessage('');
-    try {
-      const res = await api.verifyRegistrationOtps(regEmail.trim(), regGmailOtp.trim(), regAdminOtp.trim());
-      setRegVerificationToken(res.verification_token);
-      setAuthSuccessMessage('Gmail OTP and Admin OTP successfully verified! Now create your secure password to complete registration.');
-      setAuthMode('STUDENT_REGISTER_STEP3');
-    } catch (err: any) {
-      setLoginError(err.message || 'Invalid OTP code. Please check Gmail OTP and Admin OTP.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Student Register Step 3: Password Generation & Account Activation
-  const handleCompleteRegistration = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (regPassword !== regConfirmPassword) {
-      setLoginError('Passwords do not match.');
+    if (!regEmail.trim()) {
+      setLoginError('Please enter your institutional email address.');
       return;
     }
     if (regPassword.length < 6) {
       setLoginError('Password must be at least 6 characters.');
       return;
     }
+    if (regPassword !== regConfirmPassword) {
+      setLoginError('Passwords do not match. Please re-enter.');
+      return;
+    }
 
     setIsSubmitting(true);
     setLoginError('');
     setAuthSuccessMessage('');
     try {
-      const res = await api.completeRegistration(regVerificationToken, regPassword, regConfirmPassword);
+      const res = await api.directRegister({
+        full_name: regFullName.trim(),
+        email: regEmail.trim(),
+        password: regPassword,
+        confirm_password: regConfirmPassword,
+        mobile_number: regMobile.trim(),
+        college_id: regCollegeId.trim(),
+        department: regDepartment.trim(),
+        year: regYear,
+        role: regRole
+      });
       setUser(res.user);
       setLoginError('');
       if (res.user.role === 'ADMIN') {
@@ -341,7 +304,7 @@ export function App() {
         setActiveTab('menu');
       }
     } catch (err: any) {
-      setLoginError(err.message || 'Failed to complete registration.');
+      setLoginError(err.message || 'Registration failed. Please check your details.');
     } finally {
       setIsSubmitting(false);
     }
@@ -484,10 +447,10 @@ export function App() {
             style={{
               display: 'flex',
               background: '#f1f5f9',
-              padding: '0.25rem',
-              borderRadius: '12px',
-              marginBottom: '1.25rem',
-              gap: '0.25rem'
+              padding: '0.3rem',
+              borderRadius: '14px',
+              marginBottom: '1.5rem',
+              gap: '0.35rem'
             }}
           >
             <button
@@ -499,42 +462,50 @@ export function App() {
               }}
               style={{
                 flex: 1,
-                padding: '0.5rem 0.25rem',
+                padding: '0.65rem 0.5rem',
                 border: 'none',
-                borderRadius: '8px',
-                fontSize: '0.78rem',
-                fontWeight: 700,
+                borderRadius: '10px',
+                fontSize: '0.85rem',
+                fontWeight: 800,
                 cursor: 'pointer',
                 background: authMode === 'STUDENT_LOGIN' ? '#ffffff' : 'transparent',
                 color: authMode === 'STUDENT_LOGIN' ? '#ea580c' : '#64748b',
-                boxShadow: authMode === 'STUDENT_LOGIN' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
-                transition: 'all 0.15s'
+                boxShadow: authMode === 'STUDENT_LOGIN' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.35rem'
               }}
             >
-              Sign In
+              <LogIn size={15} /> Sign In
             </button>
             <button
               type="button"
               onClick={() => {
-                setAuthMode('STUDENT_REGISTER_STEP1');
+                setAuthMode('STUDENT_REGISTER');
                 setLoginError('');
                 setAuthSuccessMessage('');
               }}
               style={{
                 flex: 1,
-                padding: '0.5rem 0.25rem',
+                padding: '0.65rem 0.5rem',
                 border: 'none',
-                borderRadius: '8px',
-                fontSize: '0.78rem',
-                fontWeight: 700,
+                borderRadius: '10px',
+                fontSize: '0.85rem',
+                fontWeight: 800,
                 cursor: 'pointer',
-                background: authMode.startsWith('STUDENT_REGISTER') ? '#ffffff' : 'transparent',
-                color: authMode.startsWith('STUDENT_REGISTER') ? '#ea580c' : '#64748b',
-                boxShadow: authMode.startsWith('STUDENT_REGISTER') ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
-                transition: 'all 0.15s'
+                background: authMode === 'STUDENT_REGISTER' ? '#ffffff' : 'transparent',
+                color: authMode === 'STUDENT_REGISTER' ? '#ea580c' : '#64748b',
+                boxShadow: authMode === 'STUDENT_REGISTER' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.35rem'
               }}
             >
-              Register (OTP)
+              <UserPlus size={15} /> Register
             </button>
             <button
               type="button"
@@ -545,19 +516,23 @@ export function App() {
               }}
               style={{
                 flex: 1,
-                padding: '0.5rem 0.25rem',
+                padding: '0.65rem 0.5rem',
                 border: 'none',
-                borderRadius: '8px',
-                fontSize: '0.78rem',
-                fontWeight: 700,
+                borderRadius: '10px',
+                fontSize: '0.85rem',
+                fontWeight: 800,
                 cursor: 'pointer',
                 background: authMode.startsWith('ADMIN') ? '#ffffff' : 'transparent',
                 color: authMode.startsWith('ADMIN') ? '#e11d48' : '#64748b',
-                boxShadow: authMode.startsWith('ADMIN') ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
-                transition: 'all 0.15s'
+                boxShadow: authMode.startsWith('ADMIN') ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.35rem'
               }}
             >
-              Admin Portal
+              <Shield size={15} /> Admin Portal
             </button>
           </div>
 
@@ -606,30 +581,48 @@ export function App() {
             </div>
           )}
 
-          {/* ==================== VIEW: STUDENT LOGIN (PASSWORD + GOOGLE) ==================== */}
+          {/* ==================== VIEW: STUDENT / FACULTY SIGN IN ==================== */}
           {authMode === 'STUDENT_LOGIN' && (
             <>
-              <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+              <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', margin: '0 0 0.25rem' }}>
                   Student & Faculty Sign In
                 </h2>
                 <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0 }}>
-                  Enter your institutional email & password or sign in with Google.
+                  Enter your email & password or sign in instantly with Google.
                 </p>
+              </div>
+
+              <div style={{
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                padding: '0.6rem 0.85rem',
+                marginBottom: '1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                fontSize: '0.78rem',
+                color: '#475569'
+              }}>
+                <ShieldCheck size={16} color="#059669" style={{ flexShrink: 0 }} />
+                <span>
+                  <strong>Authorized Access Only:</strong> Only emails imported via class Excel roster or added by the administrator can log in.
+                </span>
               </div>
 
               {/* Password Login Form */}
               <form onSubmit={handleStudentPasswordLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.25rem' }}>
                 <div>
                   <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
-                    Email Address
+                    Institutional Email Address
                   </label>
                   <input
                     type="email"
                     value={studentEmail}
                     onChange={(e) => setStudentEmail(e.target.value)}
                     required
-                    placeholder="student1@gmail.com"
+                    placeholder="e.g. student1@gmail.com"
                     className="input-field"
                     style={{ width: '100%' }}
                   />
@@ -645,7 +638,7 @@ export function App() {
                       value={studentPassword}
                       onChange={(e) => setStudentPassword(e.target.value)}
                       required
-                      placeholder="Enter your password"
+                      placeholder="Enter your account password"
                       className="input-field"
                       style={{ width: '100%', paddingRight: '2.5rem' }}
                     />
@@ -676,15 +669,16 @@ export function App() {
                     width: '100%',
                     padding: '0.85rem',
                     fontSize: '0.95rem',
-                    fontWeight: 700,
+                    fontWeight: 800,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '0.5rem'
+                    gap: '0.5rem',
+                    boxShadow: '0 4px 14px rgba(234, 88, 12, 0.3)'
                   }}
                 >
                   {isSubmitting ? <RefreshCw size={18} className="animate-spin" /> : <LogIn size={18} />}
-                  {isSubmitting ? 'Signing In...' : 'Sign In with Password'}
+                  {isSubmitting ? 'Signing In...' : 'Sign In'}
                 </button>
               </form>
 
@@ -731,346 +725,212 @@ export function App() {
                 </button>
               </div>
 
-              {/* Register Callout */}
-              <div
-                style={{
-                  background: '#fff7ed',
-                  border: '1px solid #ffedd5',
-                  borderRadius: '12px',
-                  padding: '0.85rem 1rem',
-                  fontSize: '0.8rem',
-                  color: '#9a3412',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '0.5rem'
-                }}
-              >
-                <div>
-                  <strong>First time here?</strong> Register your account with OTP.
-                </div>
+              {/* Switch to Register */}
+              <div style={{ textAlign: 'center', fontSize: '0.82rem', color: '#64748b' }}>
+                Don't have an account?{' '}
                 <button
                   type="button"
                   onClick={() => {
-                    setAuthMode('STUDENT_REGISTER_STEP1');
+                    setAuthMode('STUDENT_REGISTER');
                     setLoginError('');
                     setAuthSuccessMessage('');
                   }}
                   style={{
-                    background: '#ea580c',
-                    color: '#ffffff',
+                    background: 'none',
                     border: 'none',
-                    borderRadius: '8px',
-                    padding: '0.35rem 0.75rem',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
+                    color: '#ea580c',
+                    fontWeight: 800,
                     cursor: 'pointer',
-                    whiteSpace: 'nowrap'
+                    padding: 0
                   }}
                 >
-                  Register Now →
+                  Register Here →
                 </button>
               </div>
             </>
           )}
 
-          {/* ==================== VIEW: STUDENT REGISTER STEP 1 (EMAIL CHECK) ==================== */}
-          {authMode === 'STUDENT_REGISTER_STEP1' && (
+          {/* ==================== VIEW: DIRECT REGISTRATION (NO OTP) ==================== */}
+          {authMode === 'STUDENT_REGISTER' && (
             <>
-              <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
-                <div style={{ display: 'inline-flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                  <span style={{ background: '#ea580c', color: '#ffffff', width: '22px', height: '22px', borderRadius: '50%', fontSize: '0.75rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>1</span>
-                  <span style={{ background: '#e2e8f0', color: '#64748b', width: '22px', height: '22px', borderRadius: '50%', fontSize: '0.75rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>2</span>
-                  <span style={{ background: '#e2e8f0', color: '#64748b', width: '22px', height: '22px', borderRadius: '50%', fontSize: '0.75rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>3</span>
-                </div>
+              <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', margin: '0 0 0.25rem' }}>
-                  Step 1: Institutional Email
+                  Create Your Account
                 </h2>
-                <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>
-                  Only accepted emails from the class Excel roster can be registered.
+                <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0 }}>
+                  Join SAEC CAFÉ to pre-order meals, track live queue & skip lines.
                 </p>
               </div>
 
-              <div
-                style={{
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '12px',
-                  padding: '0.85rem',
-                  fontSize: '0.78rem',
-                  color: '#475569',
-                  lineHeight: 1.45,
-                  marginBottom: '1.25rem',
-                  display: 'flex',
-                  gap: '0.5rem'
-                }}
-              >
-                <Info size={16} color="#ea580c" style={{ flexShrink: 0, marginTop: '2px' }} />
-                <div>
-                  <strong>Excel Whitelist Policy:</strong> Enter your Gmail address. The system will verify that your email was uploaded by the department via the class Excel sheet.
-                </div>
+              <div style={{
+                background: '#eff6ff',
+                border: '1px solid #bfdbfe',
+                borderRadius: '8px',
+                padding: '0.6rem 0.85rem',
+                marginBottom: '1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                fontSize: '0.78rem',
+                color: '#1e40af'
+              }}>
+                <Info size={16} color="#2563eb" style={{ flexShrink: 0 }} />
+                <span>
+                  <strong>Roster Verification:</strong> Registration is exclusively open for students & faculty pre-listed in the college Excel roster or added by the administrator.
+                </span>
               </div>
 
-              <form onSubmit={handleRequestRegistrationOtp} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+              <form onSubmit={handleDirectRegister} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
-                    Institutional Gmail Address *
+                  <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.25rem' }}>
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={regFullName}
+                    onChange={(e) => setRegFullName(e.target.value)}
+                    required
+                    placeholder="e.g. Viswanthan S"
+                    className="input-field"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.25rem' }}>
+                    Institutional Email Address *
                   </label>
                   <input
                     type="email"
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
                     required
-                    placeholder="student1@gmail.com"
+                    placeholder="e.g. viswanthan7824@gmail.com"
                     className="input-field"
                     style={{ width: '100%' }}
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="btn btn-primary"
-                  style={{
-                    width: '100%',
-                    padding: '0.85rem',
-                    fontSize: '0.95rem',
-                    fontWeight: 700,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem'
-                  }}
-                >
-                  {isSubmitting ? <RefreshCw size={18} className="animate-spin" /> : <Mail size={18} />}
-                  {isSubmitting ? 'Verifying Class Roster...' : 'Verify Email & Send OTP →'}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMode('STUDENT_LOGIN');
-                    setLoginError('');
-                    setAuthSuccessMessage('');
-                  }}
-                  className="btn btn-secondary"
-                  style={{ width: '100%' }}
-                >
-                  Back to Sign In
-                </button>
-              </form>
-            </>
-          )}
-
-          {/* ==================== VIEW: STUDENT REGISTER STEP 2 (DUAL OTP) ==================== */}
-          {authMode === 'STUDENT_REGISTER_STEP2' && (
-            <>
-              <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
-                <div style={{ display: 'inline-flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                  <span style={{ background: '#10b981', color: '#ffffff', width: '22px', height: '22px', borderRadius: '50%', fontSize: '0.75rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>✓</span>
-                  <span style={{ background: '#ea580c', color: '#ffffff', width: '22px', height: '22px', borderRadius: '50%', fontSize: '0.75rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>2</span>
-                  <span style={{ background: '#e2e8f0', color: '#64748b', width: '22px', height: '22px', borderRadius: '50%', fontSize: '0.75rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>3</span>
-                </div>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', margin: '0 0 0.25rem' }}>
-                  Step 2: Dual OTP Verification
-                </h2>
-                <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>
-                  Enter Gmail OTP and Admin Approval OTP (account viswanthan7824).
-                </p>
-              </div>
-
-              {/* Profile Confirmation Card */}
-              <div
-                style={{
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '12px',
-                  padding: '0.75rem 1rem',
-                  fontSize: '0.78rem',
-                  color: '#334155',
-                  marginBottom: '1rem'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                  <span style={{ color: '#64748b' }}>Account:</span>
-                  <strong>{regFullName || regEmail}</strong>
-                </div>
-                {regClassName && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                    <span style={{ color: '#64748b' }}>Class:</span>
-                    <strong>{regClassName}</strong>
-                  </div>
-                )}
-                {regCollegeId && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#64748b' }}>Register / ID:</span>
-                    <strong>{regCollegeId}</strong>
-                  </div>
-                )}
-              </div>
-
-              {/* Dev Simulation OTP Pills */}
-              {(simulationGmailOtp || simulationAdminOtp) && (
-                <div
-                  style={{
-                    background: '#eff6ff',
-                    border: '1px solid #bfdbfe',
-                    borderRadius: '10px',
-                    padding: '0.65rem 0.85rem',
-                    marginBottom: '1rem',
-                    fontSize: '0.75rem',
-                    color: '#1e40af'
-                  }}
-                >
-                  <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>🧪 Generated Codes:</div>
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    <span
-                      onClick={() => setRegGmailOtp(simulationGmailOtp)}
-                      style={{ background: '#dbeafe', padding: '0.2rem 0.5rem', borderRadius: '6px', cursor: 'pointer', fontWeight: 700 }}
-                    >
-                      Gmail OTP: {simulationGmailOtp} (Click to Fill)
-                    </span>
-                    <span
-                      onClick={() => setRegAdminOtp(simulationAdminOtp)}
-                      style={{ background: '#fef3c7', color: '#92400e', padding: '0.2rem 0.5rem', borderRadius: '6px', cursor: 'pointer', fontWeight: 700 }}
-                    >
-                      Admin OTP (viswanthan7824): {simulationAdminOtp}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              <form onSubmit={handleVerifyRegistrationOtps} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
-                    1. Gmail OTP (6 Digits) *
-                  </label>
-                  <input
-                    type="text"
-                    maxLength={6}
-                    value={regGmailOtp}
-                    onChange={(e) => setRegGmailOtp(e.target.value.replace(/[^0-9]/g, ''))}
-                    required
-                    placeholder="Enter 6-digit Gmail OTP"
-                    className="input-field"
-                    style={{ width: '100%', letterSpacing: '0.25em', fontWeight: 800, textAlign: 'center', fontSize: '1.1rem' }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
-                    2. Admin Approval OTP (from viswanthan7824) *
-                  </label>
-                  <input
-                    type="text"
-                    maxLength={6}
-                    value={regAdminOtp}
-                    onChange={(e) => setRegAdminOtp(e.target.value.replace(/[^0-9]/g, ''))}
-                    required
-                    placeholder="Enter 6-digit Admin OTP"
-                    className="input-field"
-                    style={{ width: '100%', letterSpacing: '0.25em', fontWeight: 800, textAlign: 'center', fontSize: '1.1rem' }}
-                  />
-                  <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '0.25rem' }}>
-                    Admin approval OTP is issued to administrator account <strong>viswanthan7824</strong>.
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting || regGmailOtp.length < 6 || regAdminOtp.length < 6}
-                  className="btn btn-primary"
-                  style={{
-                    width: '100%',
-                    padding: '0.85rem',
-                    fontSize: '0.95rem',
-                    fontWeight: 700,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem'
-                  }}
-                >
-                  {isSubmitting ? <RefreshCw size={18} className="animate-spin" /> : <KeyRound size={18} />}
-                  {isSubmitting ? 'Validating OTPs...' : 'Verify Both OTPs →'}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setAuthMode('STUDENT_REGISTER_STEP1')}
-                  className="btn btn-secondary"
-                  style={{ width: '100%' }}
-                >
-                  ← Change Email
-                </button>
-              </form>
-            </>
-          )}
-
-          {/* ==================== VIEW: STUDENT REGISTER STEP 3 (GENERATE PASSWORD) ==================== */}
-          {authMode === 'STUDENT_REGISTER_STEP3' && (
-            <>
-              <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
-                <div style={{ display: 'inline-flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                  <span style={{ background: '#10b981', color: '#ffffff', width: '22px', height: '22px', borderRadius: '50%', fontSize: '0.75rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>✓</span>
-                  <span style={{ background: '#10b981', color: '#ffffff', width: '22px', height: '22px', borderRadius: '50%', fontSize: '0.75rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>✓</span>
-                  <span style={{ background: '#ea580c', color: '#ffffff', width: '22px', height: '22px', borderRadius: '50%', fontSize: '0.75rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>3</span>
-                </div>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', margin: '0 0 0.25rem' }}>
-                  Step 3: Generate Password
-                </h2>
-                <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>
-                  Create your personal password to activate your SAEC CAFÉ account.
-                </p>
-              </div>
-
-              <form onSubmit={handleCompleteRegistration} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
-                    Generate New Password (Min 6 chars) *
-                  </label>
-                  <div style={{ position: 'relative' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.25rem' }}>
+                      Register / Staff No *
+                    </label>
                     <input
-                      type={showRegPassword ? 'text' : 'password'}
-                      value={regPassword}
-                      onChange={(e) => setRegPassword(e.target.value)}
+                      type="text"
+                      value={regCollegeId}
+                      onChange={(e) => setRegCollegeId(e.target.value)}
                       required
-                      placeholder="Create a strong password"
+                      placeholder="e.g. 912821104999"
                       className="input-field"
-                      style={{ width: '100%', paddingRight: '2.5rem' }}
+                      style={{ width: '100%' }}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowRegPassword(!showRegPassword)}
-                      style={{
-                        position: 'absolute',
-                        right: '12px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'none',
-                        border: 'none',
-                        color: '#94a3b8',
-                        cursor: 'pointer'
-                      }}
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.25rem' }}>
+                      Role
+                    </label>
+                    <select
+                      value={regRole}
+                      onChange={(e) => setRegRole(e.target.value as 'STUDENT' | 'FACULTY')}
+                      className="input-field"
+                      style={{ width: '100%', fontWeight: 600 }}
                     >
-                      {showRegPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
+                      <option value="STUDENT">Student</option>
+                      <option value="FACULTY">Faculty / Staff</option>
+                    </select>
                   </div>
                 </div>
 
-                <div>
-                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
-                    Confirm Password *
-                  </label>
-                  <input
-                    type="password"
-                    value={regConfirmPassword}
-                    onChange={(e) => setRegConfirmPassword(e.target.value)}
-                    required
-                    placeholder="Re-enter your password"
-                    className="input-field"
-                    style={{ width: '100%' }}
-                  />
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.25rem' }}>
+                      Department
+                    </label>
+                    <select
+                      value={regDepartment}
+                      onChange={(e) => setRegDepartment(e.target.value)}
+                      className="input-field"
+                      style={{ width: '100%', fontWeight: 600 }}
+                    >
+                      <option value="CSE">Computer Science (CSE)</option>
+                      <option value="IT">Information Technology (IT)</option>
+                      <option value="ECE">Electronics & Comm (ECE)</option>
+                      <option value="EEE">Electrical & Electronics (EEE)</option>
+                      <option value="MECH">Mechanical Engg (MECH)</option>
+                      <option value="AIDS">AI & Data Science (AIDS)</option>
+                      <option value="MBA">Management (MBA)</option>
+                      <option value="GENERAL">General / Other</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.25rem' }}>
+                      Year
+                    </label>
+                    <select
+                      value={regYear}
+                      onChange={(e) => setRegYear(Number(e.target.value))}
+                      className="input-field"
+                      style={{ width: '100%', fontWeight: 600 }}
+                    >
+                      <option value={1}>1st Year</option>
+                      <option value={2}>2nd Year</option>
+                      <option value={3}>3rd Year</option>
+                      <option value={4}>4th Year</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.25rem' }}>
+                      Password (Min 6) *
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showRegPassword ? 'text' : 'password'}
+                        value={regPassword}
+                        onChange={(e) => setRegPassword(e.target.value)}
+                        required
+                        placeholder="Create password"
+                        className="input-field"
+                        style={{ width: '100%', paddingRight: '2rem' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowRegPassword(!showRegPassword)}
+                        style={{
+                          position: 'absolute',
+                          right: '8px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          color: '#94a3b8',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {showRegPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.25rem' }}>
+                      Confirm Password *
+                    </label>
+                    <input
+                      type="password"
+                      value={regConfirmPassword}
+                      onChange={(e) => setRegConfirmPassword(e.target.value)}
+                      required
+                      placeholder="Confirm password"
+                      className="input-field"
+                      style={{ width: '100%' }}
+                    />
+                  </div>
                 </div>
 
                 <button
@@ -1081,16 +941,40 @@ export function App() {
                     width: '100%',
                     padding: '0.85rem',
                     fontSize: '0.95rem',
-                    fontWeight: 700,
+                    fontWeight: 800,
+                    marginTop: '0.35rem',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '0.5rem'
+                    gap: '0.5rem',
+                    boxShadow: '0 4px 14px rgba(234, 88, 12, 0.3)'
                   }}
                 >
-                  {isSubmitting ? <RefreshCw size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
-                  {isSubmitting ? 'Activating Account...' : 'Generate Password & Sign In →'}
+                  {isSubmitting ? <RefreshCw size={18} className="animate-spin" /> : <UserPlus size={18} />}
+                  {isSubmitting ? 'Creating Account...' : 'Register & Sign In'}
                 </button>
+
+                <div style={{ textAlign: 'center', fontSize: '0.82rem', color: '#64748b', marginTop: '0.25rem' }}>
+                  Already registered?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode('STUDENT_LOGIN');
+                      setLoginError('');
+                      setAuthSuccessMessage('');
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#ea580c',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      padding: 0
+                    }}
+                  >
+                    Sign In Here →
+                  </button>
+                </div>
               </form>
             </>
           )}

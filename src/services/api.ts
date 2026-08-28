@@ -218,6 +218,37 @@ export const api = {
     }
   },
 
+  async directRegister(params: {
+    full_name: string;
+    email: string;
+    password: string;
+    confirm_password?: string;
+    mobile_number?: string;
+    college_id?: string;
+    department?: string;
+    year?: number;
+    role?: 'STUDENT' | 'FACULTY';
+  }): Promise<{ token: string; user: User; message: string }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/register/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || data.message || 'Registration failed. Please check your details.');
+      }
+      setAuthToken(data.access);
+      return { token: data.access, user: data.user, message: data.message };
+    } catch (e: any) {
+      if (e.message?.includes('Failed to fetch') || e.name === 'TypeError') {
+        throw new Error(`Unable to connect to server. Please ensure backend is running.`);
+      }
+      throw e;
+    }
+  },
+
   async getAdminRegistrationOtps(): Promise<any[]> {
     try {
       const res = await fetch(`${API_BASE_URL}/auth/admin/registration-otps/`, {

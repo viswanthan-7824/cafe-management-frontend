@@ -126,11 +126,17 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
     }
   }, [cart, user.id]);
 
-  // Initial load
+  // Initial load & 5s live queue sync polling
   useEffect(() => {
     loadProducts();
     loadCategories();
     loadMyOrders();
+
+    const interval = setInterval(() => {
+      loadMyOrders();
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const loadProducts = async () => {

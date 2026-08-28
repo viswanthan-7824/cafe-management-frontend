@@ -1150,6 +1150,73 @@ export const api = {
   async updateSystemSettings(settings: any) {
     localStorage.setItem('saec_system_settings', JSON.stringify(settings));
     return settings;
+  },
+
+  async chatWithAssistant(prompt: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/assistant/chat/`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ prompt })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || err.text || 'Assistant failed to process prompt.');
+    }
+    return await res.json();
+  },
+
+  async confirmAssistantAction(previewData: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/assistant/confirm-action/`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ action_preview: previewData })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || err.detail || 'Failed to execute confirmed assistant action.');
+    }
+    return await res.json();
+  },
+
+  async getAssistantAuditLogs(): Promise<any[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/assistant/audit-logs/`, { headers: authHeaders() });
+      if (!res.ok) return [];
+      return await res.json();
+    } catch (e) {
+      return [];
+    }
+  },
+
+  async downloadPdfReport(reportType: string = 'DAILY_SALES', rangeType: string = 'today'): Promise<void> {
+    const res = await fetch(`${API_BASE_URL}/reports/generate-pdf/`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ report_type: reportType, range_type: rangeType })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to download PDF report.');
+    }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `SAEC_CAFE_${reportType}_${Date.now()}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
+  async getRealtimeQueueSync(): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/orders/realtime/`, { headers: authHeaders() });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
   }
 };
 

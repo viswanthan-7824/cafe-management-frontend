@@ -11,7 +11,8 @@ import {
   UtensilsCrossed,
   Users,
   ShoppingBag,
-  Settings
+  Settings,
+  Sparkles
 } from 'lucide-react';
 
 import type { User } from '../types';
@@ -35,6 +36,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const menuItems = [
     { id: 'dashboard', label: 'Overview Dashboard', icon: LayoutDashboard },
+    { id: 'assistant', label: 'Café Assistant ☕', icon: Sparkles },
     { id: 'pos', label: 'Manual & POS Orders', icon: ShoppingCart },
     { id: 'orders', label: 'Orders & Processing', icon: ShoppingBag },
     { id: 'food', label: 'Product Management', icon: UtensilsCrossed },

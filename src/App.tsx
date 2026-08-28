@@ -16,6 +16,7 @@ const PaymentSupportView = lazy(() => import('./components/PaymentSupportView').
 const InventoryView = lazy(() => import('./components/InventoryView').then(m => ({ default: m.InventoryView })));
 const AnalyticsView = lazy(() => import('./components/AnalyticsView').then(m => ({ default: m.AnalyticsView })));
 const StudentOrderingView = lazy(() => import('./components/StudentOrderingView').then(m => ({ default: m.StudentOrderingView })));
+const CafeAssistantView = lazy(() => import('./components/CafeAssistantView').then(m => ({ default: m.CafeAssistantView })));
 
 import { api, setAuthToken } from './services/api';
 import type { User } from './types';
@@ -1487,6 +1488,7 @@ export function App() {
             }
           >
             {activeTab === 'dashboard' && <DashboardView />}
+            {activeTab === 'assistant' && <CafeAssistantView />}
             {activeTab === 'food' && <FoodManagementView />}
             {activeTab === 'inventory' && <InventoryView />}
             {activeTab === 'orders' && <OrderManagementView userRole={user.role} />}

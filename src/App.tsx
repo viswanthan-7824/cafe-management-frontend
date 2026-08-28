@@ -1267,20 +1267,6 @@ export function App() {
                   {isSubmitting ? 'Authenticating...' : 'SIGN IN AS ADMINISTRATOR'}
                 </button>
               </form>
-
-              <div style={{ marginTop: '1.25rem', textAlign: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLoginEmail(adminEmail);
-                    setAuthStep('EMAIL');
-                    handleRequestCode();
-                  }}
-                  style={{ background: 'none', border: 'none', color: '#ea580c', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
-                >
-                  Or Request One-Time Email Code →
-                </button>
-              </div>
             </>
           )}
 

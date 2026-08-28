@@ -1455,8 +1455,8 @@ export const UserManagementView: React.FC = () => {
                       <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800 }}>Email</th>
                       <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800 }}>Password Status</th>
                       <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800 }}>Email Status</th>
-                      <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight 800 }}>Account Status</th>
-                      <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight 800 }}>Actions</th>
+                      <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800 }}>Account Status</th>
+                      <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: 800 }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>

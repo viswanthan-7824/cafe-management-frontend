@@ -121,11 +121,11 @@ export const api = {
     }
   },
 
-  async requestLoginCode(email: string): Promise<{ message: string; masked_email: string; resend_cooldown: number; dev_code?: string }> {
+  async requestLoginCode(email: string, password?: string): Promise<{ message: string; masked_email: string; resend_cooldown: number; dev_code?: string }> {
     const res = await fetch(`${API_BASE_URL}/auth/request-code/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email.trim().toLowerCase() })
+      body: JSON.stringify({ email: email.trim().toLowerCase(), password: password || '' })
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));

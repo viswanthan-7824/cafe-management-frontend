@@ -142,7 +142,7 @@ export function App() {
 
   const handleRequestCode = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!loginEmail.trim() || isSubmitting) return;
+    if (!loginEmail.trim() || !studentPassword || isSubmitting) return;
 
     setIsSubmitting(true);
     setLoginError('');
@@ -150,15 +150,15 @@ export function App() {
     setDevCodeNotification(null);
 
     try {
-      const res = await api.requestLoginCode(loginEmail.trim());
+      const res = await api.requestLoginCode(loginEmail.trim(), studentPassword);
       setMaskedEmail(res.masked_email || loginEmail.trim());
-      setResendCooldown(res.resend_cooldown || 45);
+      setResendCooldown(res.resend_cooldown || 60);
       if (res.dev_code) {
-        setDevCodeNotification(`Development Code: ${res.dev_code}`);
+        setDevCodeNotification(`Verification Code (Dev Mode): ${res.dev_code}`);
       }
       setAuthStep('CODE');
     } catch (err: any) {
-      setLoginError(err.message || 'Failed to request login code.');
+      setLoginError(err.message || 'Authentication failed. Please check your email and password.');
     } finally {
       setIsSubmitting(false);
     }
@@ -385,7 +385,7 @@ export function App() {
             </div>
           )}
 
-          {/* ================= PORTAL 1 & 2: STUDENT / FACULTY EMAIL OTP SIGN IN ================= */}
+          {/* ================= PORTAL 1 & 2: STUDENT / FACULTY EMAIL + OTP SIGN IN ================= */}
           {(authPortal === 'STUDENT' || authPortal === 'FACULTY') && (
             <>
               {authStep === 'EMAIL' && (
@@ -395,7 +395,7 @@ export function App() {
                       {authPortal === 'STUDENT' ? 'Student Sign-In' : 'Faculty / Staff Sign-In'} 👋
                     </h2>
                     <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0, lineHeight: 1.4 }}>
-                      Enter your approved institutional college email to receive a secure one-time login code.
+                      Enter your registered institutional email and password to receive a 6-digit login verification code.
                     </p>
                   </div>
 
@@ -419,14 +419,39 @@ export function App() {
                       </div>
                     </div>
 
+                    <div>
+                      <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '0.4rem' }}>
+                        Password
+                      </label>
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          type={showStudentPassword ? "text" : "password"}
+                          required
+                          placeholder="Enter password"
+                          value={studentPassword}
+                          onChange={(e) => setStudentPassword(e.target.value)}
+                          className="input-field"
+                          style={{ width: '100%', paddingLeft: '2.5rem', paddingRight: '2.5rem', fontSize: '0.95rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '12px', height: '48px' }}
+                        />
+                        <KeyRound size={18} color="#94a3b8" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+                        <button
+                          type="button"
+                          onClick={() => setShowStudentPassword(!showStudentPassword)}
+                          style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+                        >
+                          {showStudentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
+                    </div>
+
                     <button
                       type="submit"
-                      disabled={!loginEmail.trim() || isSubmitting}
+                      disabled={!loginEmail.trim() || !studentPassword || isSubmitting}
                       className="btn btn-primary"
                       style={{ width: '100%', height: '48px', fontSize: '0.95rem', fontWeight: 800, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', boxShadow: '0 4px 14px rgba(234, 88, 12, 0.35)' }}
                     >
                       {isSubmitting ? <RefreshCw size={18} className="animate-spin" /> : null}
-                      {isSubmitting ? 'Checking Approval...' : 'CONTINUE WITH ONE-TIME CODE'}
+                      {isSubmitting ? 'Validating Credentials...' : 'CONTINUE TO VERIFICATION'}
                     </button>
                   </form>
 
@@ -441,8 +466,8 @@ export function App() {
 
                     {cantAccessHelp && (
                       <div style={{ marginTop: '0.85rem', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '10px', padding: '0.85rem', fontSize: '0.8rem', color: '#9a3412', textAlign: 'left', lineHeight: 1.4 }}>
-                        <strong>Excel Roster Notice:</strong><br />
-                        Student and Faculty accounts are created by Admin via Excel imports. If your email is not registered yet, please contact the canteen administrator.
+                        <strong>Need Help?</strong><br />
+                        If you forgot your password or need an account created, please contact the canteen administrator.
                       </div>
                     )}
                   </div>
@@ -451,12 +476,15 @@ export function App() {
 
               {authStep === 'CODE' && (
                 <>
-                  <div style={{ marginBottom: '1.25rem' }}>
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.25rem' }}>
-                      Verify your email
+                  <div style={{ marginBottom: '1.25rem', textAlign: 'center' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#fff7ed', border: '2px solid #fed7aa', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#ea580c', marginBottom: '0.5rem' }}>
+                      <Mail size={24} />
+                    </div>
+                    <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.25rem' }}>
+                      A verification code has been sent to your email.
                     </h2>
                     <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0, lineHeight: 1.4 }}>
-                      We sent a 6-digit one-time code to <strong style={{ color: '#0f172a' }}>{maskedEmail}</strong>
+                      We sent a 6-digit code to <strong style={{ color: '#0f172a' }}>{maskedEmail}</strong>. (Expires in 5 minutes).
                     </p>
                   </div>
 
@@ -510,7 +538,7 @@ export function App() {
                       }}
                       style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}
                     >
-                      ← Change email address
+                      ← Back to Email & Password
                     </button>
                   </div>
                 </>

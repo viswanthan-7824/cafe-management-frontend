@@ -1658,11 +1658,11 @@ export const UserManagementView: React.FC = () => {
 
               <div>
                 <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.3rem' }}>
-                  Google Email (Optional initially)
+                  Approved College Email (Login Identifier)
                 </label>
                 <input
                   type="email"
-                  placeholder="e.g. student@gmail.com (Can be added later)"
+                  placeholder="e.g. student@saec.ac.in"
                   value={addEmail}
                   onChange={(e) => setAddEmail(e.target.value)}
                   className="input-field"
@@ -1835,18 +1835,18 @@ export const UserManagementView: React.FC = () => {
 
               <div>
                 <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.3rem' }}>
-                  Google Email (Login Identifier)
+                  Approved College Email (Login Identifier)
                 </label>
                 <input
                   type="email"
-                  placeholder="e.g. student@gmail.com"
+                  placeholder="e.g. student@saec.ac.in"
                   value={editEmail}
                   onChange={(e) => setEditEmail(e.target.value)}
                   className="input-field"
                   style={{ width: '100%' }}
                 />
                 <div style={{ fontSize: '0.72rem', color: '#ea580c', fontWeight: 600, marginTop: '3px' }}>
-                  ⚠️ This email determines which Google account can log into this user's portal.
+                  ⚠️ This email determines which college user account receives one-time login codes.
                 </div>
               </div>
 

@@ -40,19 +40,6 @@ import {
   Coffee
 } from 'lucide-react';
 
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: any) => void;
-          renderButton: (parent: HTMLElement, options: any) => void;
-          prompt: (momentListener?: any) => void;
-        };
-      };
-    };
-  }
-}
 
 type AuthMode =
   | 'STUDENT_LOGIN'

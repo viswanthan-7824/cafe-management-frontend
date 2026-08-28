@@ -1,6 +1,6 @@
-# SAEC CAFÉ — React Web Management & POS Portal
+# SAEC CAFÉ — React Responsive Web Application & Management Portal
 
-Modern, responsive web management portal and counter Point-of-Sale (POS) interface built with **React 19**, **TypeScript**, and **Vite** for **SAEC CAFÉ** at Syed Ammal Engineering College (SAEC).
+Modern, responsive full-featured web application and counter Point-of-Sale (POS) interface built with **React 19**, **TypeScript**, and **Vite** for **SAEC CAFÉ** at Syed Ammal Engineering College (SAEC).
 
 ---
 
@@ -15,10 +15,10 @@ Modern, responsive web management portal and counter Point-of-Sale (POS) interfa
         |                                 |                                 |
         v                                 v                                 v
 +-----------------------+     +-----------------------+     +-----------------------+
-|  Navigation & Layout  |     |  Role-Based Views     |     |  API Services Layer   |
-|  - Navbar             |     |  - Admin Dashboard    |     |  - Axios / Fetch API  |
-|  - Sidebar            |     |  - Cashier POS View   |     |  - JWT Auth Intercept |
-|  - Toast Notification |     |  - Live FCFS Queue    |     |  - Error Handlers     |
+|  Navigation & Layout  |     |  Role-Based Portals   |     |  API Services Layer   |
+|  - Navbar             |     |  - Student/Faculty UI |     |  - Axios / Fetch API  |
+|  - Sidebar            |     |  - Admin Dashboard    |     |  - JWT Auth Intercept |
+|  - Toast Notification |     |  - Cashier POS View   |     |  - Error Handlers     |
 +-----------------------+     +-----------------------+     +-----------------------+
         |                                 |                                 |
         v                                 v                                 v
@@ -37,18 +37,18 @@ Modern, responsive web management portal and counter Point-of-Sale (POS) interfa
 
 | Component | File Path | Description |
 |---|---|---|
+| **Student / Faculty Portal** | `src/components/StudentOrderingView.tsx` | Full responsive self-service web ordering interface for students and faculty. Menu browsing, search, dietary filtering, cart management, checkout, UPI/Cash payment, live order tracking, order cancellation, and payment issue reporting. |
 | **POS Counter** | `src/components/PosView.tsx` | High-speed counter billing interface for cashiers. Supports product search, category filtering, cart management, instant cash/UPI billing, and automatic thermal receipt generation. |
 | **Thermal Receipt** | `src/components/ThermalReceipt.tsx` | Dedicated receipt printing engine optimized for standard **58mm** and **80mm** ESC/POS thermal printers. Features barcode, order ID (`CAN-XXXX`), cashier details, line items, and reprint badges. |
 | **Analytics Dashboard** | `src/components/AnalyticsView.tsx` | Interactive PostgreSQL analytics with date range pickers (**Today**, **Yesterday**, **Last 7 Days**, **Last 30 Days**, **This Month**, **Custom Date Range**). Rendered using **Recharts** (AreaChart, BarChart, PieChart). |
 | **Food & Stock Manager** | `src/components/FoodManagementView.tsx` | Full food catalogue management, price & cost editor, category organization, live availability toggle (`AVAILABLE`, `OUT_OF_STOCK`, `NOT_AVAILABLE_TODAY`), and preparation time tuning. |
 | **FCFS Kitchen Queue** | `src/components/FcfsQueueView.tsx` | Real-time First-Come-First-Served kitchen fulfillment monitor, ordered by `confirmed_at ASC` timestamp with live status progression (`PREPARING` -> `READY` -> `DELIVERED`). |
 | **Operating Calendar** | `src/components/CalendarManager.tsx` | Admin calendar controller for setting working days, college holidays, special schedules, and business operating hours (10:00 AM – 3:30 PM). |
-| **User & Roster Manager**| `src/components/UserManagementView.tsx` | User management with dual-OTP registration verification, class-wise Excel roster batch upload with audit tracking, password resets, and role assignments. |
+| **User & Roster Manager**| `src/components/UserManagementView.tsx` | User management with Google OAuth authorization, class-wise Excel roster batch upload with audit tracking, password resets, and role assignments. |
 | **Order Management** | `src/components/OrderManagementView.tsx` | Unified live order search, order filtering by status/date/customer type, and order cancellation/refund workflows. |
 | **Payment Support** | `src/components/PaymentSupportView.tsx` | Admin verification desk for resolving customer-uploaded payment screenshots, transaction IDs, and issue tickets. |
 | **Inventory & Suppliers**| `src/components/InventoryView.tsx` | Stock transaction ledger (`STOCK_IN`, `STOCK_OUT`, `ADJUSTMENT`, `DAMAGE`), supplier directory, and low-stock alerts. |
 | **Contact Orders** | `src/components/ContactOrdersView.tsx` | Review and approve/reject bulk catering requests and special department meal preparations. |
-| **Student Ordering Simulator** | `src/components/StudentOrderingView.tsx` | Interactive customer ordering interface for testing student & faculty mobile workflows directly within the web portal. |
 
 ---
 
@@ -97,22 +97,7 @@ Open `http://localhost:5173/` in your browser.
 
 ---
 
-## 6. Role-Based Access Control in Web Portal
-
-1. **Administrator Access**:
-   - Access to all modules: Analytics, Food Management, Inventory Ledger, Calendar Manager, User Roster & Excel Imports, Contact Orders, Payment Support, System Settings.
-   - Login: `admin@saec.ac.in` (Password: `admin123`)
-
-2. **Cashier Access**:
-   - Access to POS Counter, Thermal Bill Printing, Live Order Search (`CAN-XXXX`), FCFS Kitchen Queue, Contact Order approvals.
-   - Login: `cashier@saec.ac.in` (Password: `cashier123`)
-
-3. **Student / Faculty Simulation**:
-   - Integrated testing view for evaluating mobile food ordering flows, cart calculations, and time-window restrictions.
-
----
-
-## 7. Production Build & Deployment
+## 6. Production Build & Deployment
 
 ```powershell
 # Build production bundle

@@ -626,6 +626,55 @@ export const api = {
     return await res.json();
   },
 
+  async verifyCounterPayment(orderId: number, paymentMethod: 'CASH' | 'QR_COUNTER' | 'UPI', counterNotes: string = ''): Promise<{ message: string; order: Order; payment: any }> {
+    const res = await fetch(`${API_BASE_URL}/payments/verify-counter/`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ order_id: orderId, payment_method: paymentMethod, counter_notes: counterNotes })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || err.detail || 'Payment verification failed');
+    }
+    return await res.json();
+  },
+
+  async getPendingPaymentOrders(search: string = ''): Promise<Order[]> {
+    try {
+      const params = search ? `?search=${encodeURIComponent(search)}` : '';
+      const res = await fetch(`${API_BASE_URL}/payments/pending/${params}`, { headers: authHeaders() });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data) ? data : data.results || [];
+    } catch (e) {
+      return [];
+    }
+  },
+
+  async cancelOrderPayment(orderId: number, reason: string = 'Cancelled'): Promise<{ message: string; order: Order }> {
+    const res = await fetch(`${API_BASE_URL}/payments/cancel/`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ order_id: orderId, reason })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || err.detail || 'Order cancellation failed');
+    }
+    return await res.json();
+  },
+
+  async getPaymentAuditLogs(): Promise<any[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/payments/audit-log/`, { headers: authHeaders() });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data) ? data : data.results || [];
+    } catch (e) {
+      return [];
+    }
+  },
+
   async getPaymentSupportTickets(): Promise<PaymentSupportTicket[]> {
     try {
       const res = await fetch(`${API_BASE_URL}/payment-support/`, { headers: authHeaders() });

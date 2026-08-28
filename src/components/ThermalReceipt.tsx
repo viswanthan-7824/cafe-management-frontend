@@ -170,11 +170,25 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
 
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginTop: '4px' }}>
               <span>Payment Mode:</span>
-              <span style={{ fontWeight: 'bold' }}>{order.payment_method || 'CASH'}</span>
+              <span style={{ fontWeight: 'bold' }}>
+                {order.payment_method === 'CASH'
+                  ? 'Cash at Counter'
+                  : order.payment_method === 'QR_COUNTER' || order.payment_method === 'UPI'
+                  ? 'QR at Counter'
+                  : order.payment_method || 'Cash at Counter'}
+              </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
               <span>Payment Status:</span>
-              <span style={{ fontWeight: 'bold' }}>{order.payment_status || 'PAID'}</span>
+              <span style={{ fontWeight: 'bold', color: order.payment_status === 'PAID' ? '#000000' : '#c2410c' }}>
+                {order.payment_status === 'PAID' ? 'PAID ✓' : 'PAYMENT PENDING'}
+              </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
+              <span>Order Status:</span>
+              <span style={{ fontWeight: 'bold' }}>
+                {order.status || 'CONFIRMED'}
+              </span>
             </div>
 
             <div style={{ borderBottom: '1px dashed #000000', margin: '8px 0' }} />

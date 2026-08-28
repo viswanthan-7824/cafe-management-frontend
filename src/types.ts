@@ -202,7 +202,26 @@ export type OrderStatus =
   | 'REJECTED'
   | 'CANCELLED';
 
-export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED' | 'EXPIRED';
+export type PaymentStatus = 'PENDING' | 'PAID' | 'CANCELLED' | 'FAILED' | 'REFUNDED' | 'EXPIRED';
+
+export interface Payment {
+  id: number;
+  order: number;
+  order_number: string;
+  customer_name?: string;
+  amount: number;
+  method: 'CASH' | 'QR_COUNTER' | 'UPI' | 'ONLINE';
+  method_display?: string;
+  status: PaymentStatus;
+  status_display?: string;
+  transaction_id?: string;
+  counter_notes?: string;
+  verified_by?: number;
+  verified_by_name?: string;
+  verified_at?: string;
+  created_at: string;
+  paid_at?: string;
+}
 
 export interface OrderItem {
   id: number;

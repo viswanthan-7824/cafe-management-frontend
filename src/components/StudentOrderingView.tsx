@@ -25,7 +25,8 @@ import {
   Mail,
   GraduationCap,
   Briefcase,
-  LogOut
+  LogOut,
+  Info
 } from 'lucide-react';
 
 interface CartItem {
@@ -73,7 +74,7 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [pickupTime, setPickupTime] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'UPI'>('CASH');
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'QR_COUNTER' | 'UPI'>('CASH');
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [orderError, setOrderError] = useState('');
 
@@ -1273,20 +1274,32 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
                         </div>
                       </div>
 
+                      {/* Payment Pending Banner if order is not paid yet */}
+                      {order.payment_status === 'PENDING' && (
+                        <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '10px', padding: '0.65rem 0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.78rem', color: '#c2410c', marginBottom: '0.85rem', fontWeight: 600 }}>
+                          <span>📍 Pay ₹{order.total_amount} at the Canteen Counter (Cash or QR) to begin kitchen preparation.</span>
+                          <span className="badge badge-warning" style={{ fontSize: '0.7rem' }}>Payment Pending</span>
+                        </div>
+                      )}
+
                       {/* Action buttons */}
                       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                         {order.payment_status === 'PENDING' && (
                           <button
-                            onClick={() => {
-                              setPayOrder(order);
-                              setUpiTransactionId('');
-                              setUpiError('');
-                              setUpiSuccess('');
+                            onClick={async () => {
+                              if (window.confirm(`Are you sure you want to cancel order #${order.order_number}? Your reserved items will be released.`)) {
+                                try {
+                                  await api.cancelOrderPayment(order.id, 'Cancelled by student before counter payment');
+                                  loadMyOrders();
+                                } catch (e: any) {
+                                  alert(e.message || 'Failed to cancel order');
+                                }
+                              }
                             }}
-                            className="btn btn-primary"
-                            style={{ padding: '0.45rem 0.85rem', fontSize: '0.78rem' }}
+                            className="btn btn-secondary"
+                            style={{ padding: '0.45rem 0.85rem', fontSize: '0.78rem', color: '#ef4444', borderColor: '#fecaca' }}
                           >
-                            <CreditCard size={14} /> Submit UPI Transaction ID
+                            <X size={14} /> Cancel Unpaid Order
                           </button>
                         )}
                         <button
@@ -1883,7 +1896,7 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
         </div>
       )}
 
-      {/* ======================= CHECKOUT MODAL ======================= */}
+      {/* ======================= CHECKOUT MODAL: PAYMENT AT CANTEEN COUNTER ======================= */}
       {isCheckoutOpen && (
         <div className="modal-overlay" onClick={() => setIsCheckoutOpen(false)}>
           <div
@@ -1892,9 +1905,14 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
             style={{ maxWidth: '500px', padding: '1.75rem' }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#1e293b' }}>
-                Confirm & Place Order
-              </h3>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#1e293b' }}>
+                  PAYMENT AT CANTEEN COUNTER
+                </h3>
+                <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: '#64748b' }}>
+                  Confirm items and select counter payment method
+                </p>
+              </div>
               <button onClick={() => setIsCheckoutOpen(false)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}>
                 <X size={20} />
               </button>
@@ -1906,6 +1924,15 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
                 <span>{orderError}</span>
               </div>
             )}
+
+            {/* Offline Counter Payment Notice */}
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '0.75rem 1rem', display: 'flex', alignItems: 'flex-start', gap: '0.6rem', color: '#1e40af', fontSize: '0.8rem', marginBottom: '1.15rem', lineHeight: 1.4 }}>
+              <Info size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <strong>Payment must be completed at the canteen counter.</strong>
+                <div>Your order will be confirmed and prepared after payment verification by the cashier.</div>
+              </div>
+            </div>
 
             <form onSubmit={handlePlaceOrder} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
               {/* Items Summary list */}
@@ -1920,7 +1947,7 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
                   </div>
                 ))}
                 <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed #cbd5e1', marginTop: '0.5rem', paddingTop: '0.5rem', fontWeight: 900, fontSize: '1rem' }}>
-                  <span>Total Due</span>
+                  <span>Total Due at Counter</span>
                   <span style={{ color: '#ea580c' }}>₹{cartSubtotal}</span>
                 </div>
               </div>
@@ -1938,10 +1965,10 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
                 />
               </div>
 
-              {/* Payment Method Selector */}
+              {/* Payment Method Selector: Cash or Counter QR */}
               <div>
                 <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.4rem' }}>
-                  Payment Method *
+                  Payment Method at Counter *
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                   <button
@@ -1963,20 +1990,20 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPaymentMethod('UPI')}
+                    onClick={() => setPaymentMethod('QR_COUNTER')}
                     style={{
                       padding: '0.75rem',
                       borderRadius: '10px',
-                      border: paymentMethod === 'UPI' ? '2px solid #ea580c' : '1px solid #cbd5e1',
-                      background: paymentMethod === 'UPI' ? '#fff7ed' : '#ffffff',
-                      color: paymentMethod === 'UPI' ? '#ea580c' : '#1e293b',
+                      border: paymentMethod === 'QR_COUNTER' || paymentMethod === 'UPI' ? '2px solid #ea580c' : '1px solid #cbd5e1',
+                      background: paymentMethod === 'QR_COUNTER' || paymentMethod === 'UPI' ? '#fff7ed' : '#ffffff',
+                      color: paymentMethod === 'QR_COUNTER' || paymentMethod === 'UPI' ? '#ea580c' : '#1e293b',
                       fontWeight: 700,
                       fontSize: '0.82rem',
                       cursor: 'pointer',
                       textAlign: 'center'
                     }}
                   >
-                    📱 UPI / Online
+                    📱 QR Payment at Counter
                   </button>
                 </div>
               </div>
@@ -1988,7 +2015,7 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Less spicy, Extra sambar"
+                  placeholder="e.g. Less spicy, Extra chutney"
                   value={orderNotes}
                   onChange={(e) => setOrderNotes(e.target.value)}
                   className="input-field"
@@ -2001,7 +2028,7 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
                 className="btn btn-primary"
                 style={{ width: '100%', padding: '0.9rem', fontSize: '0.95rem', fontWeight: 800, marginTop: '0.5rem' }}
               >
-                {isSubmittingOrder ? 'Placing Order...' : `Confirm & Place Order (₹${cartSubtotal})`}
+                {isSubmittingOrder ? 'Placing Order...' : `Place Order (Pay ₹${cartSubtotal} at Counter)`}
               </button>
             </form>
           </div>
@@ -2014,7 +2041,7 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
           <div
             className="modal-content"
             onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: '440px', textAlign: 'center', padding: '2rem 1.5rem' }}
+            style={{ maxWidth: '460px', textAlign: 'center', padding: '2rem 1.5rem' }}
           >
             <div
               style={{
@@ -2034,25 +2061,39 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
             </div>
 
             <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#1e293b', margin: '0 0 0.25rem' }}>
-              Order Placed Successfully!
+              ✓ ORDER PLACED
             </h3>
             <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0 0 1.25rem' }}>
-              Your food is being prepared in the kitchen.
+              Your order has been recorded in the system.
             </p>
 
-            {/* Order Code Highlight */}
-            <div style={{ background: '#fff7ed', border: '2px dashed #fed7aa', borderRadius: '14px', padding: '1rem', marginBottom: '1.25rem' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#ea580c', textTransform: 'uppercase' }}>
-                Your Order Number
+            {/* Order Code & Counter Payment Highlight */}
+            <div style={{ background: '#fff7ed', border: '2px dashed #fed7aa', borderRadius: '14px', padding: '1.2rem', marginBottom: '1.25rem' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#ea580c', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
+                Order Number
               </div>
-              <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#ea580c', letterSpacing: '0.04em' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 900, color: '#ea580c', letterSpacing: '0.04em' }}>
                 {placedOrder.order_number}
               </div>
-              {placedOrder.token_number && (
-                <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700, marginTop: '0.2rem' }}>
-                  Queue Token #{placedOrder.token_number}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '0.85rem', paddingTop: '0.85rem', borderTop: '1px solid #ffedd5', fontSize: '0.78rem' }}>
+                <div>
+                  <div style={{ color: '#9a3412', fontWeight: 700 }}>Payment Status</div>
+                  <div className="badge badge-warning" style={{ marginTop: '0.2rem' }}>PAYMENT PENDING</div>
                 </div>
-              )}
+                <div>
+                  <div style={{ color: '#9a3412', fontWeight: 700 }}>Order Status</div>
+                  <div className="badge badge-primary" style={{ marginTop: '0.2rem' }}>WAITING FOR PAYMENT</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Next Steps: Pay at counter notice */}
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.85rem 1rem', fontSize: '0.8rem', color: '#475569', textAlign: 'left', marginBottom: '1.25rem', lineHeight: 1.4 }}>
+              <strong>Payment: PAY AT CANTEEN COUNTER</strong>
+              <p style={{ margin: '0.35rem 0 0 0', color: '#64748b' }}>
+                Please complete payment of <strong>₹{placedOrder.total_amount}</strong> at the canteen counter using <strong>Cash</strong> or the <strong>Canteen Counter QR Scanner</strong>. Your order will enter kitchen prep once verified.
+              </p>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>

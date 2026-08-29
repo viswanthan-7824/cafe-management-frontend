@@ -28,6 +28,7 @@ interface ChatMessage {
   text: string;
   cardType?: string;
   actionPreview?: any;
+  structuredAction?: any;
   ambiguousData?: any;
   clarificationData?: any;
   pdfData?: any;
@@ -100,6 +101,7 @@ export const CafeAssistantView: React.FC = () => {
         text: res.text || 'Command processed.',
         cardType: res.card_type,
         actionPreview: res.action_preview,
+        structuredAction: res.structured_action,
         ambiguousData: res.ambiguous_data,
         clarificationData: res.clarification_data,
         pdfData: res.pdf_data,
@@ -240,6 +242,28 @@ export const CafeAssistantView: React.FC = () => {
                     >
                       <Printer size={14} /> Download PDF
                     </button>
+                  </div>
+                )}
+
+                {/* Structured JSON Action Box */}
+                {msg.structuredAction && (
+                  <div style={{ marginTop: '0.85rem', paddingTop: '0.85rem', borderTop: '1px solid #fed7aa' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#ea580c', textTransform: 'uppercase', marginBottom: '0.35rem', letterSpacing: '0.05em' }}>
+                      ⚡ Structured Backend Action JSON:
+                    </div>
+                    <pre style={{
+                      background: '#0f172a',
+                      color: '#38bdf8',
+                      padding: '0.75rem 1rem',
+                      borderRadius: '10px',
+                      fontSize: '0.78rem',
+                      fontFamily: 'monospace',
+                      overflowX: 'auto',
+                      border: '1px solid #334155',
+                      margin: 0
+                    }}>
+                      {JSON.stringify(msg.structuredAction, null, 2)}
+                    </pre>
                   </div>
                 )}
 

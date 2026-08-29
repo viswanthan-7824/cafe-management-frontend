@@ -43,7 +43,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'fcfs', label: 'Live FCFS Queue', icon: Layers },
     { id: 'food', label: 'Product Catalog', icon: UtensilsCrossed },
     { id: 'inventory', label: 'Stock & Inventory', icon: Boxes },
-    { id: 'demand-forecast', label: 'Demand Intelligence', icon: BrainCircuit },
     { id: 'contact', label: 'Catering & Pre-Orders', icon: MessageSquareCheck, badge: pendingContactCount },
     { id: 'users', label: 'User Management', icon: Users },
     { id: 'calendar', label: 'Working Days', icon: Calendar },

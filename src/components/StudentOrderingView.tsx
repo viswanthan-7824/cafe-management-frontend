@@ -1366,16 +1366,27 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
         <ThermalReceipt order={receiptOrder} onClose={() => setReceiptOrder(null)} />
       )}
 
-      {/* Mobile Sticky Bottom Navigation */}
+      {/* Mobile Sticky Bottom Navigation with 90%+ Mobile Coverage */}
       <div className="mobile-bottom-nav">
         <button className={`mobile-nav-btn ${activeTab === 'menu' ? 'active' : ''}`} onClick={() => setActiveTab('menu')}>
           <Utensils size={20} /> Menu
         </button>
         <button className={`mobile-nav-btn ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>
           <ShoppingBag size={20} /> Orders
+          {orders.filter((o) => o.status !== 'DELIVERED' && o.status !== 'CANCELLED').length > 0 && (
+            <span className="mobile-nav-badge">
+              {orders.filter((o) => o.status !== 'DELIVERED' && o.status !== 'CANCELLED').length}
+            </span>
+          )}
         </button>
         <button className="mobile-nav-btn" onClick={() => setIsCartOpen(true)}>
-          <ShoppingCart size={20} /> Cart ({cartTotalCount})
+          <ShoppingCart size={20} /> Cart
+          {cartTotalCount > 0 && (
+            <span className="mobile-nav-badge">{cartTotalCount}</span>
+          )}
+        </button>
+        <button className={`mobile-nav-btn ${activeTab === 'support' ? 'active' : ''}`} onClick={() => setActiveTab('support')}>
+          <HelpCircle size={20} /> Help
         </button>
         <button className={`mobile-nav-btn ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
           <UserIcon size={20} /> Profile

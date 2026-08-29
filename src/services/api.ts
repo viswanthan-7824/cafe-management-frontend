@@ -10,8 +10,7 @@ import type {
   User,
   UserStats,
   AnalyticsOverview,
-  AnalyticsDashboardData,
-  DemandForecastItem
+  AnalyticsDashboardData
 } from '../types';
 
 const isBrowser = typeof window !== 'undefined';
@@ -1352,58 +1351,6 @@ export const api = {
       return await res.json();
     } catch (e) {
       return null;
-    }
-  },
-
-  async getDemandForecast(): Promise<DemandForecastItem[]> {
-    try {
-      // Fetch products and analytics overview from real database API
-      const [products, analytics] = await Promise.all([
-        api.getProducts(),
-        api.getOverviewAnalytics('today').catch(() => null)
-      ]);
-
-      const topProductsMap = new Map<string, number>();
-      if (analytics && (analytics as any).top_selling_products) {
-        ((analytics as any).top_selling_products || []).forEach((tp: any) => {
-          topProductsMap.set(tp.product_name.toLowerCase(), tp.quantity_sold || 0);
-        });
-      }
-
-      return products.map((p: Product) => {
-        const soldToday = topProductsMap.get(p.name.toLowerCase()) || Math.floor(Math.random() * 8) + 2;
-        // Algorithmic ML Demand estimation based on current stock, minimum stock, and peak velocity
-        const avgDaily = Math.max(soldToday, Math.ceil(p.minimum_stock * 1.5));
-        const predictedDemand = Math.ceil(avgDaily * 1.4 + 5);
-        const shortage = Math.max(0, predictedDemand - p.current_stock);
-        
-        let status: 'OPTIMAL' | 'SHORTAGE' | 'CRITICAL' = 'OPTIMAL';
-        let recommendation = `Stock levels are healthy for ${p.name}. No immediate action needed.`;
-
-        if (shortage > 20 || p.current_stock <= 5) {
-          status = 'CRITICAL';
-          recommendation = `High probability of stock exhaustion. Consider preparing approximately ${shortage} additional units immediately.`;
-        } else if (shortage > 0) {
-          status = 'SHORTAGE';
-          recommendation = `Moderate demand spike expected. Consider preparing approximately ${shortage} additional units before peak hour.`;
-        }
-
-        return {
-          product_id: p.id,
-          product_name: p.name,
-          category_name: p.category_name || 'General',
-          image_url: p.image_url || p.image,
-          current_stock: p.current_stock,
-          avg_daily_sales: avgDaily,
-          predicted_demand: predictedDemand,
-          expected_shortage: shortage,
-          recommendation: recommendation,
-          confidence_score: 94.8,
-          status: status
-        };
-      });
-    } catch (e) {
-      return [];
     }
   }
 };

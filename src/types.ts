@@ -425,17 +425,4 @@ export interface AnalyticsDashboardData {
   }>;
 }
 
-export interface DemandForecastItem {
-  product_id: number;
-  product_name: string;
-  category_name: string;
-  image_url?: string;
-  current_stock: number;
-  avg_daily_sales: number;
-  predicted_demand: number;
-  expected_shortage: number;
-  recommendation: string;
-  confidence_score: number;
-  status: 'OPTIMAL' | 'SHORTAGE' | 'CRITICAL';
-}
 

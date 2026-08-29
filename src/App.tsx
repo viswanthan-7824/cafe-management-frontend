@@ -434,51 +434,63 @@ export function App() {
   if (!user) {
     return (
       <div
+        className="perspective-container"
         style={{
           minHeight: '100vh',
-          background: 'linear-gradient(135deg, #0f172a 0%, #3b1307 45%, #0f172a 100%)',
+          background: 'radial-gradient(circle at center, #1e1b4b 0%, #0f172a 60%, #020617 100%)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '1.5rem 1rem'
+          padding: '2rem 1rem',
+          position: 'relative',
+          overflow: 'hidden'
         }}
       >
+        {/* Floating 3D Ambient Background Lights */}
+        <div style={{ position: 'absolute', top: '10%', left: '15%', width: '300px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(234,88,12,0.25) 0%, transparent 70%)', filter: 'blur(40px)', animation: 'float3d 10s ease-in-out infinite alternate' }} />
+        <div style={{ position: 'absolute', bottom: '10%', right: '15%', width: '350px', height: '350px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(16,185,129,0.2) 0%, transparent 70%)', filter: 'blur(50px)', animation: 'float3d 12s ease-in-out infinite alternate-reverse' }} />
+
         <div
-          className="glass-card animate-fade-in"
+          className="card-3d ultra-3d-portal-box animate-fade-in"
           style={{
             width: '100%',
-            maxWidth: '460px',
-            padding: '2.5rem 2rem',
-            borderRadius: '24px',
-            background: 'rgba(255, 255, 255, 0.98)',
-            border: '1px solid #fed7aa',
-            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.4)'
+            maxWidth: '480px',
+            padding: '2.75rem 2.25rem',
+            borderRadius: '28px',
+            background: 'rgba(255, 255, 255, 0.96)',
+            border: '1.5px solid rgba(254, 215, 170, 0.6)',
+            boxShadow: '0 30px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.8) inset'
+          }}
+          onMouseMove={(e) => {
+            if (window.innerWidth < 768) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX - rect.left - rect.width / 2;
+            const y = e.clientY - rect.top - rect.height / 2;
+            e.currentTarget.style.setProperty('--rx', `${-y / 16}deg`);
+            e.currentTarget.style.setProperty('--ry', `${x / 16}deg`);
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.setProperty('--rx', '0deg');
+            e.currentTarget.style.setProperty('--ry', '0deg');
           }}
         >
-          {/* Header Logo & Branding */}
-          <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.75rem' }}>
+          {/* Header Ultra 3D Canteen Logo & Branding */}
+          <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+            <div className="ultra-3d-logo-ring" style={{ marginBottom: '1rem' }}>
               <img
                 src="/saec_cafe_logo.jpg"
-                alt="SAEC CAFÉ Logo"
-                style={{
-                  width: '68px',
-                  height: '68px',
-                  borderRadius: '50%',
-                  border: '3px solid #ea580c',
-                  boxShadow: '0 6px 20px rgba(234, 88, 12, 0.35)',
-                  objectFit: 'cover'
-                }}
+                alt="SAEC CAFÉ Official Logo"
+                className="ultra-3d-logo-img"
               />
             </div>
-            <h1 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>
-              SAEC <span style={{ color: '#ea580c' }}>CAFÉ</span>
+            <h1 style={{ fontSize: '2.1rem', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.03em' }}>
+              SAEC <span style={{ color: '#ea580c', textShadow: '0 4px 12px rgba(234, 88, 12, 0.3)' }}>CAFÉ</span>
             </h1>
-            <p style={{ fontSize: '0.78rem', color: '#ea580c', fontWeight: 800, margin: '0.2rem 0 0 0', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            <p style={{ fontSize: '0.78rem', color: '#ea580c', fontWeight: 900, margin: '0.25rem 0 0 0', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
               Syed Ammal Engineering College
             </p>
-            <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0.35rem 0 0', fontWeight: 600 }}>
-              Good Food. Less Waiting.
+            <p style={{ fontSize: '0.88rem', color: '#475569', margin: '0.35rem 0 0', fontWeight: 700 }}>
+              Good Food. Less Waiting. ☕
             </p>
           </div>
 

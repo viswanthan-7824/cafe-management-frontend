@@ -497,12 +497,23 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
                     <Sparkles size={14} className="animate-pulse" /> Official Canteen Food-Tech Platform
                   </div>
 
-                  <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2.8rem', fontWeight: 900, color: '#ffffff', lineHeight: 1.1, letterSpacing: '-0.03em' }}>
-                    SAEC CAFÉ
-                  </h1>
-
-                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ea580c', letterSpacing: '-0.01em' }}>
-                    "Good Food. Less Waiting."
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
+                    <div className="ultra-3d-logo-ring">
+                      <img
+                        src="/saec_cafe_logo.jpg"
+                        alt="SAEC CAFÉ Official Logo"
+                        className="ultra-3d-logo-img"
+                        style={{ width: '76px', height: '76px' }}
+                      />
+                    </div>
+                    <div>
+                      <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2.8rem', fontWeight: 900, color: '#ffffff', lineHeight: 1.1, letterSpacing: '-0.03em', margin: 0 }}>
+                        SAEC <span style={{ color: '#ea580c' }}>CAFÉ</span>
+                      </h1>
+                      <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fdba74', letterSpacing: '-0.01em', marginTop: '0.2rem' }}>
+                        "Good Food. Less Waiting."
+                      </div>
+                    </div>
                   </div>
 
                   <p style={{ fontSize: '1rem', color: '#cbd5e1', lineHeight: 1.6, maxWidth: '540px' }}>

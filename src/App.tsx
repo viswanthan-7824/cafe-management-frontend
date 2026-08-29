@@ -217,6 +217,39 @@ export function App() {
     }
   };
 
+  // Direct No-Password Student Login Handler
+  const handleDirectStudentLogin = async () => {
+    setIsSubmitting(true);
+    setLoginError('');
+    setAuthSuccessMessage('');
+
+    try {
+      const res = await api.studentPasswordLogin('student@saec.ac.in', 'student123');
+      setUser(res.user);
+      setActiveTab('food');
+    } catch (err: any) {
+      // Fallback local student user object if backend is offline or student demo mode
+      const fallbackUser: User = {
+        id: 1,
+        full_name: 'SAEC Student',
+        email: 'student@saec.ac.in',
+        role: 'STUDENT',
+        college_id: 'SAEC-STU-2026',
+        mobile_number: '9876543210',
+        status: 'ACTIVE',
+        must_change_password: false,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        department: 'Computer Science & Engineering',
+        year: 4
+      };
+      setUser(fallbackUser);
+      setActiveTab('food');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Create Password Handlers
   const handleCreatePasswordRequestOtpSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -466,7 +499,7 @@ export function App() {
                 setAuthPortal('STUDENT');
                 setLoginError('');
                 setAuthSuccessMessage('');
-                setAuthStep('EMAIL');
+                handleDirectStudentLogin();
               }}
               style={{
                 flex: 1,
@@ -568,12 +601,45 @@ export function App() {
                 <>
                   <div style={{ marginBottom: '1.25rem' }}>
                     <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.25rem' }}>
-                      {authPortal === 'STUDENT' ? 'Student Sign-In' : 'Faculty / Staff Sign-In'} 👋
+                      {authPortal === 'STUDENT' ? 'Student Instant Sign-In' : 'Faculty / Staff Sign-In'} 👋
                     </h2>
                     <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0, lineHeight: 1.4 }}>
-                      Enter your registered institutional email and password to log in.
+                      {authPortal === 'STUDENT'
+                        ? 'No password required! Click below to enter the SAEC CAFÉ Student Portal instantly.'
+                        : 'Enter your registered institutional email and password to log in.'}
                     </p>
                   </div>
+
+                  {authPortal === 'STUDENT' && (
+                    <div style={{ marginBottom: '1.25rem' }}>
+                      <button
+                        type="button"
+                        onClick={handleDirectStudentLogin}
+                        disabled={isSubmitting}
+                        className="btn btn-primary"
+                        style={{
+                          width: '100%',
+                          height: '52px',
+                          fontSize: '1rem',
+                          fontWeight: 900,
+                          borderRadius: '14px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.6rem',
+                          background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
+                          boxShadow: '0 6px 20px rgba(234, 88, 12, 0.4)'
+                        }}
+                      >
+                        {isSubmitting ? <RefreshCw size={20} className="animate-spin" /> : <GraduationCap size={22} />}
+                        {isSubmitting ? 'Entering Student Portal...' : 'ENTER STUDENT PORTAL (NO PASSWORD REQUIRED)'}
+                      </button>
+
+                      <div style={{ textAlign: 'center', margin: '1rem 0 0.5rem', fontSize: '0.78rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        — Or Sign In With Credentials —
+                      </div>
+                    </div>
+                  )}
 
                   <form onSubmit={handleStudentPasswordLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
                     <div>

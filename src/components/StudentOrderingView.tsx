@@ -476,44 +476,82 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
         {/* ======================= MENU TAB ======================= */}
         {activeTab === 'menu' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {/* Hero Section Banner */}
+            {/* 3D Hero Section Banner */}
             <div
-              className="glass-card"
+              className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-orange-950 to-slate-950 text-white p-6 sm:p-10 border border-slate-800 shadow-2xl perspective-container"
               style={{
-                padding: '2rem 2.25rem',
-                background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
+                background: 'linear-gradient(135deg, #0f172a 0%, #431407 50%, #0f172a 100%)',
                 color: '#ffffff',
-                borderRadius: '24px',
+                borderRadius: '28px',
                 position: 'relative',
                 overflow: 'hidden',
-                boxShadow: '0 12px 30px rgba(234, 88, 12, 0.25)'
+                boxShadow: '0 20px 50px rgba(15, 23, 42, 0.4)'
               }}
             >
-              <div style={{ maxWidth: '650px', position: 'relative', zIndex: 2 }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(4px)', padding: '0.35rem 0.85rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.85rem' }}>
-                  <Sparkles size={14} /> Official Canteen Food-Tech Platform
-                </div>
-                <h1 style={{ fontSize: '2.3rem', fontWeight: 900, color: '#ffffff', lineHeight: 1.15, marginBottom: '0.65rem' }}>
-                  Good Food. Less Waiting.
-                </h1>
-                <p style={{ fontSize: '0.98rem', color: '#ffedd5', lineHeight: 1.5, marginBottom: '1.25rem' }}>
-                  Order ahead, skip the queue and enjoy your meal at Syed Ammal Engineering College Canteen.
-                </p>
+              {/* Subtle ambient lighting sphere */}
+              <div style={{ position: 'absolute', right: '-10%', top: '-20%', width: '380px', height: '380px', background: 'radial-gradient(circle, rgba(234, 88, 12, 0.25) 0%, rgba(0,0,0,0) 70%)', pointerEvents: 'none' }} />
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#ffffff', color: '#059669', padding: '0.45rem 0.95rem', borderRadius: '9999px', fontWeight: 800, fontSize: '0.8rem' }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
-                    🟢 CANTEEN OPEN • Orders accepted until 3:30 PM
+              <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                <div className="lg:col-span-7 space-y-4">
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(234, 88, 12, 0.2)', border: '1px solid rgba(234, 88, 12, 0.4)', color: '#fdba74', padding: '0.35rem 0.85rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    <Sparkles size={14} className="animate-pulse" /> Official Canteen Food-Tech Platform
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: '#ffedd5', fontWeight: 600 }}>
-                    💳 Payment: Cash or Counter QR at Canteen Counter
+
+                  <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2.8rem', fontWeight: 900, color: '#ffffff', lineHeight: 1.1, letterSpacing: '-0.03em' }}>
+                    SAEC CAFÉ
+                  </h1>
+
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ea580c', letterSpacing: '-0.01em' }}>
+                    "Good Food. Less Waiting."
+                  </div>
+
+                  <p style={{ fontSize: '1rem', color: '#cbd5e1', lineHeight: 1.6, maxWidth: '540px' }}>
+                    Order ahead, skip the queue and enjoy your meal at Syed Ammal Engineering College Canteen.
+                  </p>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', paddingTop: '0.5rem' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', padding: '0.5rem 1rem', borderRadius: '9999px', fontWeight: 800, fontSize: '0.8rem' }}>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
+                      🟢 CANTEEN OPEN • Orders accepted until 3:30 PM
+                    </div>
+                    <div style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: 600 }}>
+                      💳 Counter Cash & QR Payment Supported
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Decorative Food Visual Icons */}
-              <div style={{ position: 'absolute', right: '2rem', bottom: '-1rem', opacity: 0.15, fontSize: '8rem', pointerEvents: 'none' }}>
-                ☕🥐🍔
+                {/* 3D Floating Canteen Food Composition */}
+                <div className="lg:col-span-5 relative flex justify-center items-center h-64 lg:h-72">
+                  <div className="relative w-full h-full flex items-center justify-center">
+                    {/* Floating 3D Burger */}
+                    <div className="absolute animate-float-slow" style={{ top: '10%', left: '15%', transformStyle: 'preserve-3d', zIndex: 3 }}>
+                      <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-700 p-2 shadow-2xl border border-amber-300/40 flex items-center justify-center text-4xl transform rotate-12 hover:scale-110 transition-transform">
+                        🍔
+                      </div>
+                    </div>
+
+                    {/* Floating 3D Beverage */}
+                    <div className="absolute animate-float-reverse" style={{ top: '35%', right: '12%', transformStyle: 'preserve-3d', zIndex: 4 }}>
+                      <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 p-2 shadow-2xl border border-orange-300/40 flex items-center justify-center text-3xl transform -rotate-12 hover:scale-110 transition-transform">
+                        🥤
+                      </div>
+                    </div>
+
+                    {/* Floating 3D Coffee Cup */}
+                    <div className="absolute animate-float-slow" style={{ bottom: '10%', left: '30%', transformStyle: 'preserve-3d', zIndex: 2 }}>
+                      <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 p-2 shadow-2xl border border-slate-600 flex items-center justify-center text-3xl transform rotate-6 hover:scale-110 transition-transform">
+                        ☕
+                      </div>
+                    </div>
+
+                    {/* Floating 3D Fries */}
+                    <div className="absolute animate-float-reverse" style={{ bottom: '25%', right: '35%', transformStyle: 'preserve-3d', zIndex: 3 }}>
+                      <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-600 p-2 shadow-xl border border-yellow-200/50 flex items-center justify-center text-2xl transform -rotate-6 hover:scale-110 transition-transform">
+                        🍟
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -521,30 +559,31 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
             {activeOrder && (
               <div
                 onClick={() => setActiveTab('orders')}
-                className="glass-card"
+                className="glass-card card-3d"
                 style={{
                   padding: '1rem 1.25rem',
-                  background: '#fff7ed',
-                  border: '1px solid #fed7aa',
-                  borderRadius: '16px',
+                  background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
+                  border: '1px solid #ea580c',
+                  borderRadius: '18px',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: '1rem'
+                  gap: '1rem',
+                  boxShadow: '0 8px 24px rgba(234, 88, 12, 0.15)'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#ea580c', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Clock size={20} />
+                  <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#ea580c', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(234, 88, 12, 0.3)' }}>
+                    <Clock size={22} />
                   </div>
                   <div>
-                    <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#1e293b' }}>
+                    <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#1e293b' }}>
                       Active Order <strong>#{activeOrder.order_number}</strong> is in progress
                     </div>
                     <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
                       Status: <strong style={{ color: '#ea580c' }}>{activeOrder.status}</strong> •
-                      {liveQueueData?.queue_position ? ` Position #${liveQueueData.queue_position}` : ' Tap to track live status'}
+                      {liveQueueData?.queue_position ? ` Queue Position #${liveQueueData.queue_position}` : ' Tap to track live 3D status'}
                     </div>
                   </div>
                 </div>
@@ -554,44 +593,46 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
               </div>
             )}
 
-            {/* Category Chips Bar & Controls */}
+            {/* 3D Category Chips Bar & Controls */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
                 {/* Category Chips Scroll */}
-                <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.25rem', flex: 1 }}>
+                <div style={{ display: 'flex', gap: '0.65rem', overflowX: 'auto', paddingBottom: '0.35rem', flex: 1 }}>
                   <button
                     onClick={() => setSelectedCategory('ALL')}
+                    className="btn-3d"
                     style={{
                       whiteSpace: 'nowrap',
-                      padding: '0.55rem 1.15rem',
+                      padding: '0.6rem 1.25rem',
                       borderRadius: '9999px',
                       fontWeight: 800,
                       fontSize: '0.82rem',
                       cursor: 'pointer',
                       border: selectedCategory === 'ALL' ? '1px solid #ea580c' : '1px solid #e2e8f0',
-                      background: selectedCategory === 'ALL' ? '#ea580c' : '#ffffff',
+                      background: selectedCategory === 'ALL' ? 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)' : '#ffffff',
                       color: selectedCategory === 'ALL' ? '#ffffff' : '#475569',
-                      transition: 'all 0.18s ease'
+                      boxShadow: selectedCategory === 'ALL' ? '0 6px 16px rgba(234, 88, 12, 0.3)' : 'var(--shadow-3d-sm)'
                     }}
                   >
-                    All Items ({products.filter((p) => p.is_active).length})
+                    🍽️ All Items ({products.filter((p) => p.is_active).length})
                   </button>
 
                   {categories.map((cat) => (
                     <button
                       key={cat.id}
                       onClick={() => setSelectedCategory(cat.id)}
+                      className="btn-3d"
                       style={{
                         whiteSpace: 'nowrap',
-                        padding: '0.55rem 1.15rem',
+                        padding: '0.6rem 1.25rem',
                         borderRadius: '9999px',
                         fontWeight: 800,
                         fontSize: '0.82rem',
                         cursor: 'pointer',
                         border: selectedCategory === cat.id ? '1px solid #ea580c' : '1px solid #e2e8f0',
-                        background: selectedCategory === cat.id ? '#ea580c' : '#ffffff',
+                        background: selectedCategory === cat.id ? 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)' : '#ffffff',
                         color: selectedCategory === cat.id ? '#ffffff' : '#475569',
-                        transition: 'all 0.18s ease'
+                        boxShadow: selectedCategory === cat.id ? '0 6px 16px rgba(234, 88, 12, 0.3)' : 'var(--shadow-3d-sm)'
                       }}
                     >
                       {cat.name}
@@ -604,8 +645,8 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
                   <button
                     onClick={() => setAvailableOnlyFilter(!availableOnlyFilter)}
                     style={{
-                      padding: '0.45rem 0.85rem',
-                      borderRadius: '8px',
+                      padding: '0.5rem 0.9rem',
+                      borderRadius: '10px',
                       fontSize: '0.78rem',
                       fontWeight: 700,
                       cursor: 'pointer',
@@ -620,7 +661,7 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
                   <select
                     value={sortBy}
                     onChange={(e: any) => setSortBy(e.target.value)}
-                    style={{ padding: '0.45rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.78rem', fontWeight: 700, color: '#475569', background: '#ffffff' }}
+                    style={{ padding: '0.5rem 0.85rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.78rem', fontWeight: 700, color: '#475569', background: '#ffffff' }}
                   >
                     <option value="default">Sort: Default</option>
                     <option value="price_low">Price: Low to High</option>
@@ -631,12 +672,12 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
               </div>
             </div>
 
-            {/* Food Grid Section */}
+            {/* 3D Food Grid Section */}
             {loadingProducts ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.25rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: '1.5rem' }}>
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-                  <div key={n} className="glass-card" style={{ padding: 0, overflow: 'hidden', height: '320px' }}>
-                    <div className="skeleton" style={{ height: '160px' }} />
+                  <div key={n} className="glass-card" style={{ padding: 0, overflow: 'hidden', height: '340px' }}>
+                    <div className="skeleton" style={{ height: '170px' }} />
                     <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       <div className="skeleton" style={{ height: '20px', width: '70%', borderRadius: '4px' }} />
                       <div className="skeleton" style={{ height: '14px', width: '90%', borderRadius: '4px' }} />
@@ -646,115 +687,131 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
                 ))}
               </div>
             ) : filteredProducts.length === 0 ? (
-              <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
+              <div className="glass-card" style={{ padding: '3.5rem', textAlign: 'center', color: '#64748b' }}>
                 <Utensils size={48} color="#cbd5e1" style={{ margin: '0 auto 1rem auto' }} />
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b' }}>No food items found</h3>
                 <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.25rem' }}>
-                  Try adjusting your search prompt or category filter.
+                  Try adjusting your search query or category filter.
                 </p>
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: '1.25rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
                 {filteredProducts.map((product) => {
                   const cardQty = cardQuantities[product.id] || 1;
                   const isAvailable = product.today_availability === 'AVAILABLE' && product.current_stock > 0;
                   const isLowStock = (product as any).today_availability === 'LOW_STOCK' || (product.current_stock > 0 && product.current_stock <= 10);
 
                   return (
-                    <div
-                      key={product.id}
-                      className="glass-card"
-                      style={{
-                        padding: 0,
-                        overflow: 'hidden',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        borderRadius: '20px',
-                        border: '1px solid #e2e8f0'
-                      }}
-                    >
-                      {/* Image Thumbnail Container */}
-                      <div style={{ height: '170px', width: '100%', position: 'relative', overflow: 'hidden', background: '#f1f5f9' }}>
-                        <img
-                          src={getMediaUrl(product.image) || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80'}
-                          alt={product.name}
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover',
-                            transition: 'transform 0.3s ease'
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
-                          onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-                        />
+                    <div key={product.id} className="card-3d-wrapper">
+                      <div
+                        className="card-3d"
+                        onMouseMove={(e) => {
+                          if (window.innerWidth < 768) return;
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const x = e.clientX - rect.left - rect.width / 2;
+                          const y = e.clientY - rect.top - rect.height / 2;
+                          e.currentTarget.style.setProperty('--rx', `${-y / 18}deg`);
+                          e.currentTarget.style.setProperty('--ry', `${x / 18}deg`);
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.setProperty('--rx', '0deg');
+                          e.currentTarget.style.setProperty('--ry', '0deg');
+                        }}
+                        style={{
+                          padding: 0,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          height: '100%',
+                          minHeight: '350px'
+                        }}
+                      >
+                        {/* Image Box */}
+                        <div className="card-3d-image-box" style={{ height: '175px', width: '100%', position: 'relative' }}>
+                          <img
+                            src={getMediaUrl(product.image) || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80'}
+                            alt={product.name}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover'
+                            }}
+                            onError={(e) => {
+                              (e.target as HTMLElement).setAttribute('src', 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80');
+                            }}
+                          />
 
-                        {/* Category Badge */}
-                        <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(15,23,42,0.75)', color: '#ffffff', backdropFilter: 'blur(4px)', padding: '0.25rem 0.65rem', borderRadius: '9999px', fontSize: '0.68rem', fontWeight: 800 }}>
-                          {product.category_name || (typeof product.category === 'object' ? (product.category as any).name : 'General')}
+                          {/* Category Badge */}
+                          <div className="card-3d-badge" style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(15,23,42,0.82)', color: '#ffffff', backdropFilter: 'blur(6px)', padding: '0.25rem 0.65rem', borderRadius: '9999px', fontSize: '0.68rem', fontWeight: 800 }}>
+                            {product.category_name || (typeof product.category === 'object' ? (product.category as any).name : 'General')}
+                          </div>
+
+                          {/* Status Badge */}
+                          <div className="card-3d-badge" style={{ position: 'absolute', top: '10px', right: '10px' }}>
+                            {!isAvailable ? (
+                              <span className="badge badge-danger" style={{ fontSize: '0.65rem' }}>● OUT OF STOCK</span>
+                            ) : isLowStock ? (
+                              <span className="badge badge-warning" style={{ fontSize: '0.65rem' }}>● LOW STOCK ({product.current_stock})</span>
+                            ) : (
+                              <span className="badge badge-success" style={{ fontSize: '0.65rem' }}>● AVAILABLE</span>
+                            )}
+                          </div>
                         </div>
 
-                        {/* Status Badge */}
-                        <div style={{ position: 'absolute', top: '10px', right: '10px' }}>
-                          {!isAvailable ? (
-                            <span className="badge badge-danger" style={{ fontSize: '0.65rem' }}>Out of Stock</span>
-                          ) : isLowStock ? (
-                            <span className="badge badge-warning" style={{ fontSize: '0.65rem' }}>Low Stock ({product.current_stock})</span>
-                          ) : (
-                            <span className="badge badge-success" style={{ fontSize: '0.65rem' }}>● Available</span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Card Content Body */}
-                      <div style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}>
-                        <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.35rem' }}>
-                            <h3 style={{ fontSize: '1.05rem', fontWeight: 900, color: '#1e293b', margin: 0 }}>
+                        {/* Product Content Details */}
+                        <div style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', gap: '0.6rem', flex: 1, justifyContent: 'space-between' }}>
+                          <div>
+                            <h3 style={{ fontSize: '1.05rem', fontWeight: 900, color: '#1e293b', lineHeight: 1.25 }}>
                               {product.name}
                             </h3>
-                            <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#ea580c' }}>
-                              ₹{product.price}
+                            <p style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.25rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                              {product.description || 'Delicious freshly prepared canteen item.'}
+                            </p>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9' }}>
+                            <div>
+                              <span style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 700, display: 'block', textTransform: 'uppercase' }}>Price</span>
+                              <span style={{ fontSize: '1.25rem', fontWeight: 900, color: '#ea580c' }}>
+                                ₹{product.price}
+                              </span>
                             </div>
+
+                            {isAvailable ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                {/* Quantity Stepper */}
+                                <div style={{ display: 'flex', alignItems: 'center', background: '#f1f5f9', borderRadius: '10px', padding: '0.15rem' }}>
+                                  <button
+                                    onClick={() => setCardQuantities(prev => ({ ...prev, [product.id]: Math.max(1, (prev[product.id] || 1) - 1) }))}
+                                    style={{ width: '26px', height: '26px', border: 'none', background: '#ffffff', borderRadius: '8px', cursor: 'pointer', fontWeight: 800, color: '#475569', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}
+                                  >
+                                    -
+                                  </button>
+                                  <span style={{ padding: '0 0.45rem', fontSize: '0.82rem', fontWeight: 800, color: '#1e293b' }}>
+                                    {cardQty}
+                                  </span>
+                                  <button
+                                    onClick={() => setCardQuantities(prev => ({ ...prev, [product.id]: Math.min(product.current_stock, (prev[product.id] || 1) + 1) }))}
+                                    style={{ width: '26px', height: '26px', border: 'none', background: '#ffffff', borderRadius: '8px', cursor: 'pointer', fontWeight: 800, color: '#475569', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}
+                                  >
+                                    +
+                                  </button>
+                                </div>
+
+                                <button
+                                  onClick={() => handleAddToCart(product, cardQty)}
+                                  className="btn-3d btn-3d-primary card-3d-button"
+                                  style={{ padding: '0.55rem 0.95rem', fontSize: '0.78rem' }}
+                                >
+                                  <Plus size={15} /> ADD
+                                </button>
+                              </div>
+                            ) : (
+                              <button disabled className="btn btn-secondary" style={{ opacity: 0.6, fontSize: '0.75rem', cursor: 'not-allowed' }}>
+                                Unavailable
+                              </button>
+                            )}
                           </div>
-
-                          <p style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.4, margin: '0 0 1rem 0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                            {product.description || 'Freshly prepared delicious item at SAEC Canteen.'}
-                          </p>
-                        </div>
-
-                        {/* Card Controls & Add Button */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginTop: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9' }}>
-                          {/* Stepper */}
-                          <div style={{ display: 'flex', alignItems: 'center', background: '#f1f5f9', borderRadius: '8px', padding: '0.2rem' }}>
-                            <button
-                              onClick={() => setCardQuantities((prev) => ({ ...prev, [product.id]: Math.max(1, cardQty - 1) }))}
-                              disabled={!isAvailable}
-                              style={{ width: '28px', height: '28px', border: 'none', background: '#ffffff', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1e293b' }}
-                            >
-                              <Minus size={14} />
-                            </button>
-                            <span style={{ padding: '0 0.6rem', fontSize: '0.85rem', fontWeight: 800, color: '#1e293b' }}>
-                              {cardQty}
-                            </span>
-                            <button
-                              onClick={() => setCardQuantities((prev) => ({ ...prev, [product.id]: Math.min(product.current_stock, cardQty + 1) }))}
-                              disabled={!isAvailable}
-                              style={{ width: '28px', height: '28px', border: 'none', background: '#ffffff', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1e293b' }}
-                            >
-                              <Plus size={14} />
-                            </button>
-                          </div>
-
-                          {/* Add Button */}
-                          <button
-                            onClick={() => handleAddToCart(product, cardQty)}
-                            disabled={!isAvailable}
-                            className="btn btn-primary"
-                            style={{ flex: 1, padding: '0.55rem', fontSize: '0.82rem', fontWeight: 800, opacity: !isAvailable ? 0.5 : 1 }}
-                          >
-                            <Plus size={16} /> Add to Cart
-                          </button>
                         </div>
                       </div>
                     </div>

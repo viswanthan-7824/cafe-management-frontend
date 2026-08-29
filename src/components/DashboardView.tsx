@@ -146,21 +146,55 @@ export const DashboardView: React.FC = () => {
       </div>
 
       {/* KPI Cards Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1.35rem' }}>
         {kpis.map((kpi, idx) => {
           const IconComp = kpi.icon;
           return (
-            <div key={idx} className="glass-card" style={{ padding: '1.25rem', borderRadius: '18px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: kpi.bg, color: kpi.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <IconComp size={22} />
+            <div
+              key={idx}
+              className="card-3d glass-card"
+              onMouseMove={(e) => {
+                if (window.innerWidth < 768) return;
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+                e.currentTarget.style.setProperty('--rx', `${-y / 15}deg`);
+                e.currentTarget.style.setProperty('--ry', `${x / 15}deg`);
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.setProperty('--rx', '0deg');
+                e.currentTarget.style.setProperty('--ry', '0deg');
+              }}
+              style={{
+                padding: '1.35rem',
+                borderRadius: '20px',
+                border: '1px solid #e2e8f0',
+                background: '#ffffff'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.85rem' }}>
+                <div
+                  className="card-3d-image-box"
+                  style={{
+                    width: '46px',
+                    height: '46px',
+                    borderRadius: '14px',
+                    background: kpi.bg,
+                    color: kpi.color,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                  }}
+                >
+                  <IconComp size={24} />
                 </div>
-                <span className="badge badge-neutral" style={{ fontSize: '0.65rem' }}>{kpi.badge}</span>
+                <span className="badge badge-neutral card-3d-badge" style={{ fontSize: '0.68rem', fontWeight: 800 }}>{kpi.badge}</span>
               </div>
-              <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#1e293b', lineHeight: 1.1 }}>
+              <div style={{ fontSize: '1.85rem', fontWeight: 900, color: '#1e293b', lineHeight: 1.1 }}>
                 {kpi.value}
               </div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#475569', marginTop: '0.35rem' }}>
+              <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#475569', marginTop: '0.35rem' }}>
                 {kpi.title}
               </div>
               <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.15rem' }}>

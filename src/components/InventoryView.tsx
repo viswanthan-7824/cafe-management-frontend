@@ -60,6 +60,61 @@ export const InventoryView: React.FC = () => {
         </button>
       </div>
 
+      {/* 3D Key Product Inventory Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        {products.slice(0, 4).map((p) => {
+          const isAvailable = p.current_stock > 0 && p.today_availability === 'AVAILABLE';
+          return (
+            <div
+              key={p.id}
+              className="card-3d glass-card p-4 space-y-2.5 border border-slate-200"
+              onMouseMove={(e) => {
+                if (window.innerWidth < 768) return;
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+                e.currentTarget.style.setProperty('--rx', `${-y / 12}deg`);
+                e.currentTarget.style.setProperty('--ry', `${x / 12}deg`);
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.setProperty('--rx', '0deg');
+                e.currentTarget.style.setProperty('--ry', '0deg');
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  {p.category_name}
+                </span>
+                <span className={`badge text-[10px] ${isAvailable ? 'badge-success' : 'badge-danger'}`}>
+                  {isAvailable ? '● AVAILABLE' : '● OUT OF STOCK'}
+                </span>
+              </div>
+
+              <h3 className="text-base font-extrabold text-slate-900 leading-snug">
+                {p.name}
+              </h3>
+
+              <div className="flex items-baseline justify-between pt-1">
+                <div>
+                  <span className="text-2xl font-black text-slate-900">{p.current_stock}</span>
+                  <span className="text-xs font-semibold text-slate-500 ml-1">{p.unit || 'units'}</span>
+                </div>
+                <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-md">
+                  18 sold today
+                </span>
+              </div>
+
+              <button
+                onClick={() => setSelectedProduct(p)}
+                className="btn-3d btn-3d-secondary w-full text-xs py-1.5 mt-2"
+              >
+                Adjust Stock
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.5rem' }}>
         {/* Product Stock Table */}
         <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>

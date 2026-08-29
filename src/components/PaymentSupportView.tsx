@@ -17,7 +17,7 @@ import { api } from '../services/api';
 import type { Order } from '../types';
 
 export const PaymentSupportView: React.FC = () => {
-  const [activeSubTab, setActiveSubTab] = useState<'pending' | 'audit'>('pending');
+  const [activeSubTab, setActiveSubTab] = useState<'pending' | 'audit' | 'reports'>('pending');
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,21 +92,46 @@ export const PaymentSupportView: React.FC = () => {
     }
   };
 
+  const [generatingReport, setGeneratingReport] = useState<string | null>(null);
+  const [readyReports, setReadyReports] = useState<{ [key: string]: boolean }>({});
+
+  const reportCards = [
+    { type: 'DAILY_SALES', title: 'Daily Sales Report', desc: 'Detailed breakdown of today\'s orders, total sales revenue, item quantities, and counter payments.' },
+    { type: 'WEEKLY_SALES', title: 'Weekly Sales Summary', desc: 'Aggregated weekly revenue trends, top customer breakdown, and sales velocity.' },
+    { type: 'MONTHLY_SALES', title: 'Monthly Financial Audit', desc: 'Comprehensive monthly canteen financial audit and category revenue distribution.' },
+    { type: 'INVENTORY', title: 'Inventory Stock Report', desc: 'Current stock balance, reorder threshold alerts, and stock movement log.' },
+    { type: 'ORDERS', title: 'Orders Lifecycle Log', desc: 'Full listing of completed, cancelled, and pending orders for compliance auditing.' },
+    { type: 'PAYMENTS', title: 'Payment Verification Audit', desc: 'Counter cash & QR payment verification records with admin audit timestamps.' },
+    { type: 'CANCELLED', title: 'Cancelled Orders Report', desc: 'Analysis of cancelled/rejected canteen orders and refund reason logs.' }
+  ];
+
+  const handleGenerateReport = async (reportType: string) => {
+    setGeneratingReport(reportType);
+    try {
+      await api.downloadPdfReport(reportType, 'today');
+      setReadyReports(prev => ({ ...prev, [reportType]: true }));
+    } catch (e: any) {
+      alert(e.message || 'Report generation failed');
+    } finally {
+      setGeneratingReport(null);
+    }
+  };
+
   return (
-    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="animate-fade-in space-y-6">
       {/* Header Banner */}
-      <div className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="glass-card flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.6rem', margin: 0 }}>
             <ShieldCheck size={26} color="#ea580c" />
-            Counter Payment Verification Desk
+            Counter Payment & 3D Reports Desk
           </h2>
           <p style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '0.35rem', margin: 0, fontWeight: 500 }}>
-            Verify physical <strong>Cash</strong> and <strong>Counter QR</strong> payments. Only verified orders enter the kitchen preparation queue.
+            Verify counter payments and generate instant official PDF reports for Syed Ammal Engineering College Canteen.
           </p>
         </div>
 
-        {/* Tab Toggle: Pending vs Audit Logs */}
+        {/* Subtab Navigation */}
         <div style={{ display: 'flex', gap: '0.5rem', background: '#f1f5f9', padding: '0.3rem', borderRadius: '12px' }}>
           <button
             onClick={() => setActiveSubTab('pending')}
@@ -118,8 +143,7 @@ export const PaymentSupportView: React.FC = () => {
               color: activeSubTab === 'pending' ? '#ea580c' : '#64748b',
               fontWeight: 800,
               fontSize: '0.85rem',
-              cursor: 'pointer',
-              boxShadow: activeSubTab === 'pending' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none'
+              cursor: 'pointer'
             }}
           >
             Pending Payments ({pendingOrders.length})
@@ -134,11 +158,25 @@ export const PaymentSupportView: React.FC = () => {
               color: activeSubTab === 'audit' ? '#ea580c' : '#64748b',
               fontWeight: 800,
               fontSize: '0.85rem',
-              cursor: 'pointer',
-              boxShadow: activeSubTab === 'audit' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none'
+              cursor: 'pointer'
             }}
           >
-            Verification Audit Log
+            Payment Audit Log
+          </button>
+          <button
+            onClick={() => setActiveSubTab('reports')}
+            style={{
+              padding: '0.5rem 1rem',
+              borderRadius: '8px',
+              border: 'none',
+              background: activeSubTab === 'reports' ? '#ffffff' : 'transparent',
+              color: activeSubTab === 'reports' ? '#ea580c' : '#64748b',
+              fontWeight: 800,
+              fontSize: '0.85rem',
+              cursor: 'pointer'
+            }}
+          >
+            PDF Reports Center 📄
           </button>
         </div>
       </div>
@@ -378,6 +416,63 @@ export const PaymentSupportView: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* ===================== TAB 3: 3D REPORTS ===================== */}
+      {activeSubTab === 'reports' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {reportCards.map((rep) => {
+            const isGen = generatingReport === rep.type;
+            const isReady = readyReports[rep.type];
+
+            return (
+              <div
+                key={rep.type}
+                className="card-3d glass-card p-6 space-y-4 border border-slate-200"
+                onMouseMove={(e) => {
+                  if (window.innerWidth < 768) return;
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const x = e.clientX - rect.left - rect.width / 2;
+                  const y = e.clientY - rect.top - rect.height / 2;
+                  e.currentTarget.style.setProperty('--rx', `${-y / 15}deg`);
+                  e.currentTarget.style.setProperty('--ry', `${x / 15}deg`);
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.setProperty('--rx', '0deg');
+                  e.currentTarget.style.setProperty('--ry', '0deg');
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center text-2xl shadow-sm card-3d-image-box">
+                    📄
+                  </div>
+                  {isReady && (
+                    <span className="badge badge-success text-[10px]">✓ Report Ready</span>
+                  )}
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-extrabold text-slate-900 leading-snug">
+                    {rep.title}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    {rep.desc}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => handleGenerateReport(rep.type)}
+                  disabled={isGen}
+                  className="btn-3d btn-3d-primary w-full text-xs py-2.5 flex items-center justify-center gap-2"
+                >
+                  <Receipt className={`w-4 h-4 ${isGen ? 'animate-spin' : ''}`} />
+                  {isGen ? 'Generating report...' : isReady ? 'Download PDF Report' : 'Generate PDF'}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
+

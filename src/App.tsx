@@ -17,6 +17,7 @@ const InventoryView = lazy(() => import('./components/InventoryView').then(m => 
 const AnalyticsView = lazy(() => import('./components/AnalyticsView').then(m => ({ default: m.AnalyticsView })));
 const StudentOrderingView = lazy(() => import('./components/StudentOrderingView').then(m => ({ default: m.StudentOrderingView })));
 const CafeAssistantView = lazy(() => import('./components/CafeAssistantView').then(m => ({ default: m.CafeAssistantView })));
+const DemandForecastView = lazy(() => import('./components/DemandForecastView').then(m => ({ default: m.DemandForecastView })));
 
 import { api, setAuthToken } from './services/api';
 import type { User } from './types';
@@ -724,7 +725,7 @@ export function App() {
                       <Mail size={24} />
                     </div>
                     <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.25rem' }}>
-                      A verification code has been sent to your email.
+                      An OTP has been sent to your email. Enter the OTP to verify your identity and continue creating your password.
                     </h2>
                     <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0, lineHeight: 1.4 }}>
                       We sent a 6-digit verification code to <strong style={{ color: '#0f172a' }}>{maskedEmail}</strong>. (Expires in 5 minutes).
@@ -1404,6 +1405,7 @@ export function App() {
             {activeTab === 'assistant' && <CafeAssistantView />}
             {activeTab === 'food' && <FoodManagementView />}
             {activeTab === 'inventory' && <InventoryView />}
+            {activeTab === 'demand-forecast' && <DemandForecastView />}
             {activeTab === 'orders' && <OrderManagementView userRole={user.role} />}
             {activeTab === 'pos' && <PosView />}
             {activeTab === 'fcfs' && <FcfsQueueView />}

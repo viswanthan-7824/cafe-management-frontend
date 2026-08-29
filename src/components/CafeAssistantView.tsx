@@ -166,11 +166,11 @@ export const CafeAssistantView: React.FC = () => {
           </div>
           <div>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#1e293b', margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              SAEC CAFÉ Canteen Assistant
+              ☕ CAFÉ ASSISTANT
               <span className="badge badge-primary" style={{ fontSize: '0.68rem' }}>AI Powered</span>
             </h2>
             <p style={{ fontSize: '0.78rem', color: '#64748b', margin: '0.15rem 0 0 0' }}>
-              Dynamic natural language query, live order stats, inventory tool execution & PDF report generator.
+              Your AI operations assistant — Live inventory queries, stock adjustments & report generation.
             </p>
           </div>
         </div>

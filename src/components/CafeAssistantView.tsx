@@ -17,9 +17,11 @@ import {
   Coffee,
   Check,
   X,
-  HelpCircle
+  HelpCircle,
+  KeyRound
 } from 'lucide-react';
 import { api } from '../services/api';
+import { getGeminiApiKey, saveGeminiApiKey } from '../services/gemini';
 
 interface ChatMessage {
   id: string;
@@ -51,7 +53,16 @@ export const CafeAssistantView: React.FC = () => {
   const [inputPrompt, setInputPrompt] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState(getGeminiApiKey());
+  const [currentApiKey, setCurrentApiKey] = useState(getGeminiApiKey());
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const handleSaveApiKey = () => {
+    saveGeminiApiKey(apiKeyInput);
+    setCurrentApiKey(apiKeyInput.trim());
+    setShowApiKeyModal(false);
+  };
 
   const suggestedCommands = [
     "Is the canteen open today?",
@@ -178,6 +189,15 @@ export const CafeAssistantView: React.FC = () => {
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            onClick={() => setShowApiKeyModal(true)}
+            className="btn btn-secondary"
+            style={{ padding: '0.45rem 0.85rem', fontSize: '0.8rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+          >
+            <KeyRound size={14} color={currentApiKey ? '#10b981' : '#ea580c'} />
+            {currentApiKey ? 'Key Configured ✓' : 'Set Gemini API Key'}
+          </button>
+
           <button
             onClick={() => handleDownloadPdf('DAILY_SALES')}
             disabled={downloadingPdf}
@@ -454,6 +474,57 @@ export const CafeAssistantView: React.FC = () => {
           </form>
         </div>
       </div>
+
+      {/* Gemini API Key Configuration Modal */}
+      {showApiKeyModal && (
+        <div className="modal-overlay">
+          <div className="modal-content animate-fade-in" style={{ maxWidth: '480px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
+              <KeyRound size={22} color="#ea580c" />
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#1e293b', margin: 0 }}>
+                Configure Google Gemini API Key
+              </h3>
+            </div>
+
+            <p style={{ fontSize: '0.82rem', color: '#64748b', lineHeight: 1.5, marginBottom: '1rem' }}>
+              Enter your Google Gemini API Key to enable <strong>Gemini 2.5 Flash</strong> for natural language processing, automated database tool execution, and structured action JSON generation.
+            </p>
+
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '0.35rem' }}>
+                Google Gemini API Key:
+              </label>
+              <input
+                type="password"
+                placeholder="AIzaSy..."
+                value={apiKeyInput}
+                onChange={(e) => setApiKeyInput(e.target.value)}
+                className="input-field"
+                style={{ width: '100%', padding: '0.7rem', fontSize: '0.9rem', fontFamily: 'monospace' }}
+              />
+              <span style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.35rem', display: 'block' }}>
+                Key is stored securely in browser local storage.
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowApiKeyModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleSaveApiKey}
+                style={{ fontWeight: 800 }}
+              >
+                Save API Key
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

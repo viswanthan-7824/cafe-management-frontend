@@ -507,10 +507,10 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
                       />
                     </div>
                     <div>
-                      <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2.8rem', fontWeight: 900, color: '#ffffff', lineHeight: 1.1, letterSpacing: '-0.03em', margin: 0 }}>
+                      <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: 'clamp(1.7rem, 6vw, 2.8rem)', fontWeight: 900, color: '#ffffff', lineHeight: 1.1, letterSpacing: '-0.03em', margin: 0 }}>
                         SAEC <span style={{ color: '#ea580c' }}>CAFÉ</span>
                       </h1>
-                      <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fdba74', letterSpacing: '-0.01em', marginTop: '0.2rem' }}>
+                      <div style={{ fontSize: 'clamp(1rem, 3.5vw, 1.3rem)', fontWeight: 800, color: '#fdba74', letterSpacing: '-0.01em', marginTop: '0.2rem' }}>
                         "Good Food. Less Waiting."
                       </div>
                     </div>
@@ -608,7 +608,7 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
                 {/* Category Chips Scroll */}
-                <div style={{ display: 'flex', gap: '0.65rem', overflowX: 'auto', paddingBottom: '0.35rem', flex: 1 }}>
+                <div className="no-scrollbar" style={{ display: 'flex', gap: '0.65rem', overflowX: 'auto', paddingBottom: '0.35rem', flex: 1, WebkitOverflowScrolling: 'touch' }}>
                   <button
                     onClick={() => setSelectedCategory('ALL')}
                     className="btn-3d"

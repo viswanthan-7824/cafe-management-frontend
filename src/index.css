@@ -613,3 +613,50 @@ h1, h2, h3, h4, h5, h6 {
   animation: float3d 12s ease-in-out infinite alternate;
 }
 
+/* ================= GOOGLE PIXEL 8 (412px x 915px) MOBILE RESPONSIVE ENGINE ================= */
+@media (max-width: 480px) {
+  html, body {
+    font-size: 14px;
+    touch-action: manipulation;
+  }
+
+  .perspective-container {
+    perspective: none !important;
+  }
+
+  .ultra-3d-portal-box {
+    padding: 1.75rem 1.25rem !important;
+    border-radius: 20px !important;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4) !important;
+  }
+
+  .ultra-3d-logo-img {
+    width: 72px !important;
+    height: 72px !important;
+  }
+
+  .btn-3d, .btn {
+    min-height: 48px !important;
+    touch-action: manipulation;
+  }
+
+  /* Pixel 8 Custom Scrollbar Hide for Category Chips */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Responsive Modals for Pixel 8 */
+  .modal-content {
+    width: 95% !important;
+    max-height: 88vh !important;
+    overflow-y: auto !important;
+    padding: 1.25rem !important;
+    border-radius: 20px !important;
+  }
+}
+
+

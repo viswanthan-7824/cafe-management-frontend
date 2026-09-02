@@ -142,7 +142,8 @@ export interface Product {
   id: number;
   name: string;
   description: string;
-  category: number;
+  category: number | Category | any;
+  category_id?: number;
   category_name?: string;
   price: number;
   cost_price: number;
@@ -160,6 +161,7 @@ export interface Product {
   minimum_stock: number;
   maximum_stock: number;
   availability_status: AvailabilityStatus;
+  is_veg?: boolean;
   is_active: boolean;
   created_at?: string;
   updated_at?: string;
@@ -193,6 +195,7 @@ export interface BusinessDay {
 }
 
 export type OrderStatus =
+  | 'PENDING'
   | 'REQUESTED'
   | 'AWAITING_APPROVAL'
   | 'AWAITING_PAYMENT'
@@ -200,11 +203,12 @@ export type OrderStatus =
   | 'CONFIRMED'
   | 'PREPARING'
   | 'READY'
+  | 'COMPLETED'
   | 'DELIVERED'
   | 'REJECTED'
   | 'CANCELLED';
 
-export type PaymentStatus = 'PENDING' | 'PAID' | 'CANCELLED' | 'FAILED' | 'REFUNDED' | 'EXPIRED';
+export type PaymentStatus = 'PENDING' | 'PAID' | 'COMPLETED' | 'CANCELLED' | 'FAILED' | 'REFUNDED' | 'EXPIRED';
 
 export interface Payment {
   id: number;
@@ -227,7 +231,8 @@ export interface Payment {
 
 export interface OrderItem {
   id: number;
-  product: number;
+  product?: number | Product | any;
+  product_id?: number;
   product_name: string;
   unit_price: number;
   quantity: number;
@@ -237,23 +242,27 @@ export interface OrderItem {
 export interface Order {
   id: number;
   order_number: string;
+  order_code?: string;
   token_number?: number | string;
-  business_day: number;
+  queue_number?: number | string;
+  business_day?: number;
   user?: number;
-  customer_name: string;
-  customer_role: string;
-  customer_type: string;
-  order_source: 'MOBILE' | 'POS';
-  order_type: FoodType;
-  status: OrderStatus;
-  payment_status: PaymentStatus;
+  customer_name?: string;
+  customer_role?: string;
+  customer_type?: string;
+  order_source?: 'MOBILE' | 'POS';
+  order_type?: FoodType;
+  status: OrderStatus | string;
+  order_status?: OrderStatus | string;
+  payment_status: PaymentStatus | string;
   payment_method?: string;
+  is_paid?: boolean;
   pickup_time?: string;
   created_at: string;
   confirmed_at?: string;
   completed_at?: string;
-  subtotal: number;
-  discount_amount: number;
+  subtotal?: number;
+  discount_amount?: number;
   total_amount: number;
   notes?: string;
   items: OrderItem[];

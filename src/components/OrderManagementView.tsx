@@ -326,7 +326,7 @@ export const OrderManagementView: React.FC<OrderManagementProps> = ({ userRole =
                   Placed on {new Date(selectedOrder.created_at).toLocaleString()} • {selectedOrder.order_source} Order
                 </div>
               </div>
-              <div>{getStatusBadge(selectedOrder.status)}</div>
+              <div>{getStatusBadge(selectedOrder.status as OrderStatus)}</div>
             </div>
 
             <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem', marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.85rem' }}>

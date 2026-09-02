@@ -1,6 +1,8 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
+import { StudentAuth } from './components/StudentAuth';
+import { StudentOrderingView } from './components/StudentOrderingView';
 
 // Code-split dynamic lazy imports for Admin Portal views
 const DashboardView = lazy(() => import('./components/DashboardView').then(m => ({ default: m.DashboardView })));
@@ -17,7 +19,7 @@ const InventoryView = lazy(() => import('./components/InventoryView').then(m => 
 const AnalyticsView = lazy(() => import('./components/AnalyticsView').then(m => ({ default: m.AnalyticsView })));
 const CafeAssistantView = lazy(() => import('./components/CafeAssistantView').then(m => ({ default: m.CafeAssistantView })));
 
-import { api, setAuthToken } from './services/api';
+import { api, setAuthToken, API_BASE_URL } from './services/api';
 import type { User } from './types';
 import {
   LogIn,
@@ -27,12 +29,15 @@ import {
   Mail,
   Shield,
   RefreshCw,
-  Lock
+  Lock,
+  ArrowLeft,
+  Coffee
 } from 'lucide-react';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [user, setUser] = useState<User | null>(null);
+  const [authPortal, setAuthPortal] = useState<'STUDENT' | 'ADMIN'>('STUDENT');
 
   const [businessStatus, setBusinessStatus] = useState<any>({
     is_ordering_open: true,
@@ -69,19 +74,14 @@ export function App() {
     const savedToken = localStorage.getItem('token');
     if (savedToken) {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api'}/auth/profile/`, {
+        const res = await fetch(`${API_BASE_URL}/auth/profile/`, {
           headers: { Authorization: `Bearer ${savedToken}` }
         });
         if (res.ok) {
           const userData = await res.json();
+          setUser(userData);
           if (userData.role === 'ADMIN') {
-            setUser(userData);
             setActiveTab('dashboard');
-          } else {
-            // Non-admin user tried to log into Web Portal
-            setAuthToken(null);
-            setUser(null);
-            setLoginError('Access Restricted. Web portal is for Canteen Administration only. Please use the SAEC CAFÉ Mobile Application for Student & Faculty ordering.');
           }
         } else {
           setAuthToken(null);
@@ -107,7 +107,7 @@ export function App() {
       } else {
         setAuthToken(null);
         setUser(null);
-        setLoginError('Access Restricted. Web portal is for Canteen Administration only. Please use the SAEC CAFÉ Mobile Application.');
+        setLoginError('Access Restricted. This login screen is for Canteen Administration only.');
       }
     } catch (err: any) {
       setLoginError(err.message || 'Invalid administrator credentials. Please check your email and password.');
@@ -120,56 +120,36 @@ export function App() {
     setAuthToken(null);
     setUser(null);
     setShowLogoutConfirm(false);
-    setAdminEmail('');
-    setAdminPassword('');
-    setLoginError('');
   };
 
-  // 1. UNAUTHENTICATED ADMIN LOGIN SCREEN (WEB IS ADMIN ONLY)
+  // 1. UNAUTHENTICATED USER LOGIN ROUTING
   if (!user) {
-    return (
-      <div
-        className="perspective-container"
-        style={{
-          minHeight: '100vh',
-          background: 'radial-gradient(circle at center, #1e1b4b 0%, #0f172a 60%, #020617 100%)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '2rem 1rem',
-          position: 'relative',
-          overflow: 'hidden'
-        }}
-      >
-        {/* Floating Ambient Background Lights */}
-        <div style={{ position: 'absolute', top: '10%', left: '15%', width: '300px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(225,29,72,0.25) 0%, transparent 70%)', filter: 'blur(40px)' }} />
-        <div style={{ position: 'absolute', bottom: '10%', right: '15%', width: '350px', height: '350px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(234,88,12,0.2) 0%, transparent 70%)', filter: 'blur(50px)' }} />
+    if (authPortal === 'STUDENT') {
+      return (
+        <StudentAuth
+          onLoginSuccess={(loggedUser) => setUser(loggedUser)}
+          onSwitchToAdmin={() => setAuthPortal('ADMIN')}
+        />
+      );
+    }
 
-        <div
-          className="card-3d ultra-3d-portal-box animate-fade-in"
-          style={{
-            width: '100%',
-            maxWidth: '440px',
-            padding: '2.5rem 2rem',
-            borderRadius: '24px',
-            background: 'rgba(255, 255, 255, 0.96)',
-            border: '1.5px solid rgba(225, 29, 72, 0.3)',
-            boxShadow: '0 30px 80px rgba(0, 0, 0, 0.5)'
-          }}
-        >
-          {/* Header Logo & Branding */}
-          <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
-            <div className="ultra-3d-logo-ring" style={{ marginBottom: '1rem' }}>
-              <img
-                src="/saec_cafe_logo.jpg"
-                alt="SAEC CAFÉ Logo"
-                className="ultra-3d-logo-img"
-              />
+    // Admin Login Screen
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', padding: '1.5rem', fontFamily: "'Inter', sans-serif" }}>
+        <div style={{ width: '100%', maxWidth: '440px', background: '#ffffff', borderRadius: '24px', padding: '2.5rem', boxShadow: '0 25px 60px rgba(0,0,0,0.3)', border: '1px solid #e2e8f0' }}>
+          
+          <button
+            onClick={() => setAuthPortal('STUDENT')}
+            style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginBottom: '1.5rem' }}
+          >
+            <ArrowLeft size={16} /> Back to Student / Faculty Portal
+          </button>
+
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <div style={{ width: '68px', height: '68px', borderRadius: '20px', background: 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', boxShadow: '0 10px 25px rgba(225, 29, 72, 0.35)' }}>
+              <Shield size={34} />
             </div>
-            <h1 style={{ fontSize: '2.1rem', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.03em' }}>
-              SAEC <span style={{ color: '#e11d48', textShadow: '0 4px 12px rgba(225, 29, 72, 0.3)' }}>CAFÉ</span>
-            </h1>
-            <p style={{ fontSize: '0.78rem', color: '#e11d48', fontWeight: 900, margin: '0.25rem 0 0 0', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+            <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: 800, color: '#e11d48', letterSpacing: '0.12em' }}>
               ADMINISTRATOR WEB PORTAL
             </p>
             <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0.35rem 0 0', fontWeight: 600 }}>
@@ -254,11 +234,7 @@ export function App() {
             </button>
           </form>
 
-          <div style={{ marginTop: '1.75rem', fontSize: '0.75rem', color: '#64748b', textAlign: 'center', lineHeight: 1.4 }}>
-            📱 <strong>Student or Faculty?</strong> Please use the <strong>SAEC CAFÉ Mobile Application</strong> for food ordering and live queue tracking.
-          </div>
-
-          <div style={{ marginTop: '1rem', fontSize: '0.72rem', color: '#94a3b8', textAlign: 'center' }}>
+          <div style={{ marginTop: '1.5rem', fontSize: '0.72rem', color: '#94a3b8', textAlign: 'center' }}>
             Syed Ammal Engineering College • Canteen Automation System
           </div>
         </div>
@@ -266,7 +242,18 @@ export function App() {
     );
   }
 
-  // 2. AUTHENTICATED ADMIN MANAGEMENT PORTAL
+  // 2. AUTHENTICATED STUDENT / FACULTY PORTAL
+  if (user.role === 'STUDENT' || user.role === 'FACULTY') {
+    return (
+      <StudentOrderingView
+        user={user}
+        businessStatus={businessStatus}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  // 3. AUTHENTICATED ADMIN MANAGEMENT PORTAL
   return (
     <div style={{ minHeight: '100vh', display: 'flex', background: 'var(--bg-main)' }}>
       {/* Admin Sidebar Navigation */}
@@ -388,4 +375,3 @@ export function App() {
 }
 
 export default App;
-

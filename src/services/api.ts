@@ -21,7 +21,7 @@ const isLocalhost = isBrowser && (
   window.location.hostname.startsWith('10.')
 );
 
-const envBaseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
+const envBaseUrl = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL) as string | undefined;
 const rawBaseUrl = envBaseUrl || (isLocalhost ? 'http://127.0.0.1:8000/api' : 'https://web-production-85e59.up.railway.app/api');
 export const API_BASE_URL = rawBaseUrl.endsWith('/api') ? rawBaseUrl : `${rawBaseUrl.replace(/\/$/, '')}/api`;
 export const BACKEND_SERVER_URL = API_BASE_URL.replace(/\/api\/?$/, '');

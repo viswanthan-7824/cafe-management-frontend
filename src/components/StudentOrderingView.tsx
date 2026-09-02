@@ -3,36 +3,40 @@ import type { User, Product, Category, Order } from '../types';
 import { api, getMediaUrl } from '../services/api';
 import { ThermalReceipt } from './ThermalReceipt';
 import {
-  Utensils,
+  Coffee,
   Search,
   ShoppingCart,
-  Clock,
   CheckCircle2,
   AlertCircle,
   ShoppingBag,
   User as UserIcon,
-  ChevronRight,
   Plus,
   Minus,
   Trash2,
   X,
   Printer,
   HelpCircle,
-  Lock,
   Phone,
   Mail,
   GraduationCap,
   Briefcase,
   LogOut,
   Info,
-  Sparkles,
-  Coffee,
   Check,
-  ChevronDown,
-  ChevronUp,
-  Filter,
-  ArrowRight,
-  RefreshCw
+  RefreshCw,
+  Utensils,
+  Receipt,
+  HelpCircle as SupportIcon,
+  FastForward,
+  CheckCircle,
+  Clock,
+  Circle,
+  XCircle,
+  FileText,
+  Badge,
+  ShieldCheck,
+  Flame,
+  ArrowRight
 } from 'lucide-react';
 
 interface CartItem {
@@ -67,16 +71,13 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [loadingOrders, setLoadingOrders] = useState(false);
 
-  // Real-time Queue position state
-  const [liveQueueData, setLiveQueueData] = useState<any>(null);
-
-  // Search & Filters
+  // Search & Filters (Matching Flutter MenuTab)
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<number | 'ALL'>('ALL');
   const [availableOnlyFilter, setAvailableOnlyFilter] = useState(false);
   const [sortBy, setSortBy] = useState<'default' | 'price_low' | 'price_high' | 'name'>('default');
 
-  // Cart state
+  // Cart state (Matching Flutter CartDrawer)
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem(`saec_cart_${user.id}`);
@@ -86,64 +87,62 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
     }
   });
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [cartBounce, setCartBounce] = useState(false);
 
-  // Quantities per product card stepper state
+  // Card quantities for product grid steppers (Matching Flutter MenuTab _cardQuantities)
   const [cardQuantities, setCardQuantities] = useState<{ [productId: number]: number }>({});
 
   // Toast Notification State
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  // Checkout state
+  // Checkout Modal state (Matching Flutter CheckoutModal)
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [pickupTime, setPickupTime] = useState('');
-  const [orderNotes, setOrderNotes] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'QR_COUNTER'>('CASH');
+  const [pickupSlot, setPickupSlot] = useState<string>('ASAP (Next 10-15 Mins)');
+  const [orderNotes, setOrderNotes] = useState('');
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
-  const [orderError, setOrderError] = useState('');
 
-  // Placed Order Success Modal
+  // Placed Order Success Modal state (Matching Flutter PlacedOrderModal)
   const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
 
-  // Thermal Receipt Modal
-  const [receiptOrder, setReceiptOrder] = useState<Order | null>(null);
+  // Receipt Modal state (Matching Flutter ReceiptModal)
+  const [viewingReceiptOrder, setViewingReceiptOrder] = useState<Order | null>(null);
 
-  // Support / Issue Modal State
-  const [issueOrderCode, setIssueOrderCode] = useState('');
-  const [issueCategory, setIssueCategory] = useState('ORDER_ISSUE');
-  const [issueDescription, setIssueDescription] = useState('');
-  const [issueSubmitting, setIssueSubmitting] = useState(false);
-  const [issueSuccess, setIssueSuccess] = useState('');
-  const [issueError, setIssueError] = useState('');
+  // Support Ticket Form state (Matching Flutter SupportTab)
+  const [supportOrderCode, setSupportOrderCode] = useState<string>('');
+  const [supportCategory, setSupportCategory] = useState<string>('ORDER_ISSUE');
+  const [supportDescription, setSupportDescription] = useState<string>('');
+  const [isSubmittingSupport, setIsSubmittingSupport] = useState(false);
+  const [supportMessage, setSupportMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
 
-  // Save Cart to local storage
+  // Logout confirmation dialog state (Matching Flutter ProfileTab _showLogoutConfirmation)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  // Sync Cart to LocalStorage
   useEffect(() => {
     try {
       localStorage.setItem(`saec_cart_${user.id}`, JSON.stringify(cart));
-    } catch {
-      // ignore
-    }
+    } catch (_) {}
   }, [cart, user.id]);
 
-  // Initial Load & Live 5s Queue Polling
+  // Initial Load & Live Queue Polling (Matching Flutter 5s timer)
   useEffect(() => {
     loadProducts();
     loadCategories();
-    loadMyOrders();
+    loadOrders();
 
     const interval = setInterval(() => {
-      loadMyOrders();
+      loadOrders(true);
     }, 5000);
 
     return () => clearInterval(interval);
   }, []);
 
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
-    const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    const id = Math.random().toString(36).substring(2, 9);
     setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 3200);
+    }, 3000);
   };
 
   const loadProducts = async () => {
@@ -152,7 +151,7 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
       const data = await api.getProducts();
       setProducts(data);
     } catch (e) {
-      console.error('Failed to load products', e);
+      console.error(e);
     } finally {
       setLoadingProducts(false);
     }
@@ -163,48 +162,38 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
       const data = await api.getCategories();
       setCategories(data);
     } catch (e) {
-      console.error('Failed to load categories', e);
+      console.error(e);
     }
   };
 
-  const loadMyOrders = async () => {
-    setLoadingOrders(true);
+  const loadOrders = async (silent = false) => {
+    if (!silent) setLoadingOrders(true);
     try {
       const data = await api.getOrders();
       setOrders(data);
-
-      const queueSync = await api.getRealtimeQueueSync();
-      if (queueSync) {
-        setLiveQueueData(queueSync);
-      }
     } catch (e) {
-      console.error('Failed to load my orders', e);
+      console.error(e);
     } finally {
-      setLoadingOrders(false);
+      if (!silent) setLoadingOrders(false);
     }
   };
 
-  // Filtered & Sorted Products
+  // Filtered Products (Matching Flutter MenuTab _filteredProducts)
   const filteredProducts = useMemo(() => {
     let result = products.filter((p) => p.is_active);
 
     if (selectedCategory !== 'ALL') {
-      result = result.filter((p) => {
-        if (typeof p.category === 'object' && p.category !== null) {
-          return (p.category as any).id === selectedCategory;
-        }
-        return p.category === selectedCategory;
-      });
+      result = result.filter((p) => p.category_id === selectedCategory || (p.category && p.category.id === selectedCategory));
     }
 
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      result = result.filter(
-        (p) =>
-          p.name.toLowerCase().includes(query) ||
-          p.description?.toLowerCase().includes(query) ||
-          (p.category_name && p.category_name.toLowerCase().includes(query))
-      );
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter((p) => {
+        const nameMatch = p.name.toLowerCase().includes(q);
+        const descMatch = p.description?.toLowerCase().includes(q) || false;
+        const catMatch = p.category_name?.toLowerCase().includes(q) || false;
+        return nameMatch || descMatch || catMatch;
+      });
     }
 
     if (availableOnlyFilter) {
@@ -222,8 +211,8 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
     return result;
   }, [products, selectedCategory, searchQuery, availableOnlyFilter, sortBy]);
 
-  // Cart Functions
-  const cartTotalCount = useMemo(() => {
+  // Cart Quantities & Totals
+  const cartItemCount = useMemo(() => {
     return cart.reduce((sum, item) => sum + item.quantity, 0);
   }, [cart]);
 
@@ -238,1160 +227,1703 @@ export const StudentOrderingView: React.FC<StudentOrderingViewProps> = ({
     }
 
     setCart((prev) => {
-      const existingIndex = prev.findIndex((item) => item.product.id === product.id);
-      if (existingIndex > -1) {
-        const updated = [...prev];
-        const newQty = updated[existingIndex].quantity + qty;
-        if (newQty > product.current_stock) {
-          showToast(`Only ${product.current_stock} units available for ${product.name}.`, 'error');
-          return prev;
-        }
-        updated[existingIndex].quantity = newQty;
-        return updated;
+      const index = prev.findIndex((i) => i.product.id === product.id);
+      if (index >= 0) {
+        const copy = [...prev];
+        copy[index].quantity += qty;
+        return copy;
       } else {
-        if (qty > product.current_stock) {
-          showToast(`Only ${product.current_stock} units available for ${product.name}.`, 'error');
-          return prev;
-        }
         return [...prev, { product, quantity: qty }];
       }
     });
 
-    // Reset card stepper
-    setCardQuantities((prev) => ({ ...prev, [product.id]: 1 }));
-
-    // Animations
-    setCartBounce(true);
-    setTimeout(() => setCartBounce(false), 400);
-
-    showToast(`✓ ${product.name} added to cart`, 'success');
+    showToast(`Added ${product.name} to cart!`, 'success');
   };
 
-  const handleUpdateCartQuantity = (productId: number, delta: number) => {
+  const handleUpdateCartQty = (productId: number, newQty: number) => {
     setCart((prev) => {
-      const existing = prev.find((item) => item.product.id === productId);
-      if (!existing) return prev;
-
-      const newQty = existing.quantity + delta;
       if (newQty <= 0) {
-        return prev.filter((item) => item.product.id !== productId);
+        return prev.filter((i) => i.product.id !== productId);
       }
-
-      if (newQty > existing.product.current_stock) {
-        showToast(`Only ${existing.product.current_stock} units available.`, 'error');
-        return prev;
-      }
-
-      return prev.map((item) => (item.product.id === productId ? { ...item, quantity: newQty } : item));
+      return prev.map((i) => (i.product.id === productId ? { ...i, quantity: newQty } : i));
     });
   };
 
   const handleRemoveCartItem = (productId: number) => {
-    setCart((prev) => prev.filter((item) => item.product.id !== productId));
+    setCart((prev) => prev.filter((i) => i.product.id !== productId));
   };
 
   const handleClearCart = () => {
     setCart([]);
   };
 
-  // Submit Order
-  const handlePlaceOrder = async () => {
-    if (cart.length === 0) return;
+  // Submit Order (Matching Flutter CheckoutModal)
+  const handleConfirmOrder = async () => {
+    if (cart.length === 0 || isSubmittingOrder) return;
 
     setIsSubmittingOrder(true);
-    setOrderError('');
 
     try {
-      const itemsData = cart.map((item) => ({
+      const items = cart.map((item) => ({
         product_id: item.product.id,
         quantity: item.quantity,
-        notes: ''
       }));
 
-      const isFaculty = user.role === 'FACULTY';
-
-      const createdOrder = await api.createOrder({
-        customer_type: isFaculty ? 'FACULTY' : 'STUDENT',
-        order_source: 'MOBILE',
-        order_type: 'READY_FOOD',
-        pickup_time: pickupTime || undefined,
-        notes: orderNotes || undefined,
-        items_data: itemsData,
-        is_paid: false
+      const created = await api.createCustomerOrder({
+        customer_type: user.role === 'FACULTY' ? 'FACULTY' : 'STUDENT',
+        items,
+        pickup_time: pickupSlot,
+        notes: orderNotes,
+        payment_method: paymentMethod,
       });
 
-      setPlacedOrder(createdOrder);
+      setPlacedOrder(created);
       setCart([]);
       setIsCheckoutOpen(false);
       setIsCartOpen(false);
-      loadMyOrders();
-
-      showToast('✓ Order placed successfully!', 'success');
+      setOrderNotes('');
+      loadOrders();
     } catch (err: any) {
-      setOrderError(err.message || 'Failed to place order. Please try again.');
+      showToast(err.message || 'Failed to place order.', 'error');
     } finally {
       setIsSubmittingOrder(false);
     }
   };
 
-  // Submit Payment Support Ticket
+  // Submit Support Ticket (Matching Flutter SupportTab)
   const handleSubmitSupportTicket = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!issueCategory || !issueDescription) return;
+    if (!supportDescription.trim()) {
+      setSupportMessage({ text: 'Please provide a detailed description.', isSuccess: false });
+      return;
+    }
 
-    setIssueSubmitting(true);
-    setIssueSuccess('');
-    setIssueError('');
+    setIsSubmittingSupport(true);
+    setSupportMessage(null);
 
     try {
       await api.createPaymentSupportTicket({
-        order_code: issueOrderCode || undefined,
-        issue_category: issueCategory,
-        description: issueDescription
+        order_code: supportOrderCode || undefined,
+        category: supportCategory,
+        description: supportDescription.trim(),
       });
 
-      setIssueSuccess('✓ Your ticket has been submitted to Canteen Admin.');
-      setIssueOrderCode('');
-      setIssueDescription('');
+      setSupportMessage({ text: 'Your support request has been submitted to the canteen manager.', isSuccess: true });
+      setSupportDescription('');
+      setSupportOrderCode('');
     } catch (err: any) {
-      setIssueError(err.message || 'Failed to submit ticket.');
+      setSupportMessage({ text: err.message || 'Failed to submit ticket.', isSuccess: false });
     } finally {
-      setIssueSubmitting(false);
+      setIsSubmittingSupport(false);
     }
   };
 
-  // Active active order for live tracking
-  const activeOrder = useMemo(() => {
-    return orders.find(
-      (o) => o.status !== 'DELIVERED' && o.status !== 'CANCELLED' && o.status !== 'REJECTED'
+  // Active vs History Orders (Matching Flutter OrdersTab)
+  const activeOrders = useMemo(() => {
+    return orders.filter(
+      (o) => o.status !== 'COMPLETED' && o.status !== 'CANCELLED' && o.status !== 'DELIVERED' && o.status !== 'REJECTED'
+    );
+  }, [orders]);
+
+  const historyOrders = useMemo(() => {
+    return orders.filter(
+      (o) => o.status === 'COMPLETED' || o.status === 'CANCELLED' || o.status === 'DELIVERED' || o.status === 'REJECTED'
     );
   }, [orders]);
 
   return (
-    <div className="animate-fade-in" style={{ minHeight: '100vh', background: '#f8fafc', paddingBottom: '80px' }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        backgroundColor: '#0f172a',
+        color: '#ffffff',
+        fontFamily: "'Inter', sans-serif",
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       {/* Toast Notification Container */}
-      <div className="toast-container">
+      <div
+        style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          zIndex: 2000,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px',
+          maxWidth: '360px',
+        }}
+      >
         {toasts.map((toast) => (
-          <div key={toast.id} className={`toast-item ${toast.type}`}>
-            {toast.type === 'success' && <CheckCircle2 size={18} color="#10b981" />}
-            {toast.type === 'error' && <AlertCircle size={18} color="#ef4444" />}
-            {toast.type === 'info' && <Info size={18} color="#ea580c" />}
+          <div
+            key={toast.id}
+            style={{
+              padding: '12px 16px',
+              borderRadius: '10px',
+              backgroundColor: toast.type === 'success' ? '#166534' : toast.type === 'error' ? '#991b1b' : '#1e293b',
+              color: '#ffffff',
+              border: `1px solid ${toast.type === 'success' ? '#22c55e' : toast.type === 'error' ? '#ef4444' : '#334155'}`,
+              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.4)',
+              fontSize: '0.88rem',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+            }}
+          >
+            {toast.type === 'success' && <CheckCircle2 size={18} color="#4ade80" />}
+            {toast.type === 'error' && <AlertCircle size={18} color="#fca5a5" />}
+            {toast.type === 'info' && <Info size={18} color="#f59e0b" />}
             <span>{toast.message}</span>
           </div>
         ))}
       </div>
 
-      {/* Top Navbar */}
-      <header style={{ position: 'sticky', top: 0, zIndex: 800, background: '#ffffff', borderBottom: '1px solid #e2e8f0', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
-          {/* Logo & Brand */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }} onClick={() => setActiveTab('menu')}>
-            <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#ea580c', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(234, 88, 12, 0.3)' }}>
-              <Coffee size={22} />
-            </div>
-            <div>
-              <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.2rem', fontWeight: 900, color: '#1e293b', lineHeight: 1.1, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                SAEC CAFÉ
-              </div>
-              <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600 }}>
-                Good Food. Less Waiting.
-              </div>
-            </div>
-          </div>
-
-          {/* Desktop Search Bar */}
-          <div style={{ flex: 1, maxWidth: '440px', display: 'flex', alignItems: 'center', position: 'relative' }}>
-            <Search size={17} style={{ position: 'absolute', left: '12px', color: '#94a3b8' }} />
-            <input
-              type="text"
-              placeholder="Search coffee, samosas, puffs, beverages..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="input-field"
-              style={{ paddingLeft: '2.4rem', paddingRight: searchQuery ? '2.2rem' : '1rem', height: '40px', fontSize: '0.85rem', borderRadius: '9999px' }}
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                style={{ position: 'absolute', right: '10px', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
-              >
-                <X size={16} />
-              </button>
-            )}
-          </div>
-
-          {/* Right Navigation Actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <button
-              onClick={() => setActiveTab('orders')}
+      {/* Main Container Wrapper */}
+      <div style={{ maxWidth: '1000px', width: '100%', margin: '0 auto', flex: 1, display: 'flex', flexDirection: 'column' }}>
+        
+        {/* APP BAR (Matching Flutter PortalMainScreen AppBar) */}
+        <header
+          style={{
+            backgroundColor: '#0f172a',
+            padding: '16px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderBottom: '1px solid #1e293b',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div
               style={{
-                background: activeTab === 'orders' ? '#fff7ed' : '#ffffff',
-                border: activeTab === 'orders' ? '1px solid #fed7aa' : '1px solid #e2e8f0',
-                color: activeTab === 'orders' ? '#ea580c' : '#475569',
-                padding: '0.5rem 0.9rem',
-                borderRadius: '9999px',
-                fontWeight: 700,
-                fontSize: '0.82rem',
+                padding: '6px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                color: '#f59e0b',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.4rem',
-                cursor: 'pointer'
+                justifyContent: 'center',
               }}
             >
-              <ShoppingBag size={16} />
-              <span className="desktop-only">My Orders</span>
-              {orders.filter((o) => o.status !== 'DELIVERED' && o.status !== 'CANCELLED').length > 0 && (
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ea580c' }} />
-              )}
-            </button>
-
-            {/* Cart Button */}
-            <button
-              onClick={() => setIsCartOpen(true)}
-              className={`btn btn-primary ${cartBounce ? 'cart-bounce-animation' : ''}`}
-              style={{ padding: '0.5rem 1rem', borderRadius: '9999px', fontSize: '0.85rem', fontWeight: 800 }}
-            >
-              <ShoppingCart size={17} />
-              <span>Cart</span>
-              <span style={{ background: '#ffffff', color: '#ea580c', padding: '0.1rem 0.5rem', borderRadius: '9999px', fontSize: '0.78rem' }}>
-                {cartTotalCount}
-              </span>
-            </button>
-
-            {/* User Profile dropdown */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderLeft: '1px solid #e2e8f0', paddingLeft: '0.75rem' }}>
-              <button
-                onClick={() => setActiveTab('profile')}
-                style={{ background: '#f1f5f9', border: 'none', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1e293b', cursor: 'pointer' }}
-              >
-                <UserIcon size={18} />
-              </button>
+              <Coffee size={20} />
             </div>
+            <span style={{ fontSize: '1.15rem', fontWeight: 800, letterSpacing: '1px', color: '#ffffff' }}>
+              SAEC CAFÉ
+            </span>
           </div>
+
+          <div
+            style={{
+              backgroundColor: 'rgba(245, 158, 11, 0.15)',
+              border: '1px solid rgba(245, 158, 11, 0.4)',
+              color: '#f59e0b',
+              padding: '4px 10px',
+              borderRadius: '12px',
+              fontSize: '0.72rem',
+              fontWeight: 800,
+              letterSpacing: '0.5px',
+            }}
+          >
+            {user.role}
+          </div>
+        </header>
+
+        {/* BUSINESS STATUS BANNER (Matching Flutter PortalMainScreen) */}
+        <div
+          style={{
+            backgroundColor: '#1e293b',
+            padding: '8px 20px',
+            fontSize: '0.78rem',
+            fontWeight: 600,
+            color: '#cbd5e1',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            borderBottom: '1px solid #334155',
+          }}
+        >
+          <span>{businessStatus?.message || '🟢 SAEC CAFÉ • Ordering Open (10:00 AM – 3:30 PM)'}</span>
         </div>
-      </header>
 
-      {/* Main Container */}
-      <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '1.5rem 1.25rem' }}>
-        {/* ======================= MENU TAB ======================= */}
-        {activeTab === 'menu' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {/* 3D Hero Section Banner */}
-            <div
-              className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-orange-950 to-slate-950 text-white p-6 sm:p-10 border border-slate-800 shadow-2xl perspective-container"
-              style={{
-                background: 'linear-gradient(135deg, #0f172a 0%, #431407 50%, #0f172a 100%)',
-                color: '#ffffff',
-                borderRadius: '28px',
-                position: 'relative',
-                overflow: 'hidden',
-                boxShadow: '0 20px 50px rgba(15, 23, 42, 0.4)'
-              }}
-            >
-              {/* Subtle ambient lighting sphere */}
-              <div style={{ position: 'absolute', right: '-10%', top: '-20%', width: '380px', height: '380px', background: 'radial-gradient(circle, rgba(234, 88, 12, 0.25) 0%, rgba(0,0,0,0) 70%)', pointerEvents: 'none' }} />
+        {/* TAB BODY CONTENT AREA */}
+        <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '100px' }}>
 
-              <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-                <div className="lg:col-span-7 space-y-4">
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(234, 88, 12, 0.2)', border: '1px solid rgba(234, 88, 12, 0.4)', color: '#fdba74', padding: '0.35rem 0.85rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    <Sparkles size={14} className="animate-pulse" /> Official Canteen Food-Tech Platform
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
-                    <div className="ultra-3d-logo-ring">
-                      <img
-                        src="/saec_cafe_logo.jpg"
-                        alt="SAEC CAFÉ Official Logo"
-                        className="ultra-3d-logo-img"
-                        style={{ width: '76px', height: '76px' }}
-                      />
-                    </div>
-                    <div>
-                      <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: 'clamp(1.7rem, 6vw, 2.8rem)', fontWeight: 900, color: '#ffffff', lineHeight: 1.1, letterSpacing: '-0.03em', margin: 0 }}>
-                        SAEC <span style={{ color: '#ea580c' }}>CAFÉ</span>
-                      </h1>
-                      <div style={{ fontSize: 'clamp(1rem, 3.5vw, 1.3rem)', fontWeight: 800, color: '#fdba74', letterSpacing: '-0.01em', marginTop: '0.2rem' }}>
-                        "Good Food. Less Waiting."
-                      </div>
-                    </div>
-                  </div>
-
-                  <p style={{ fontSize: '1rem', color: '#cbd5e1', lineHeight: 1.6, maxWidth: '540px' }}>
-                    Order ahead, skip the queue and enjoy your meal at Syed Ammal Engineering College Canteen.
-                  </p>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', paddingTop: '0.5rem' }}>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', padding: '0.5rem 1rem', borderRadius: '9999px', fontWeight: 800, fontSize: '0.8rem' }}>
-                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
-                      🟢 CANTEEN OPEN • Orders accepted until 3:30 PM
-                    </div>
-                    <div style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: 600 }}>
-                      💳 Counter Cash & QR Payment Supported
-                    </div>
-                  </div>
+          {/* TAB 0: MENU TAB */}
+          {activeTab === 'menu' && (
+            <div>
+              {/* Search & Filter Header Section (Matching Flutter MenuTab) */}
+              <div style={{ padding: '16px 16px 12px', backgroundColor: '#0f172a' }}>
+                {/* Search Bar Input */}
+                <div style={{ position: 'relative', marginBottom: '12px' }}>
+                  <input
+                    type="text"
+                    placeholder="Search food items..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{
+                      width: '100%',
+                      height: '44px',
+                      paddingLeft: '2.5rem',
+                      paddingRight: searchQuery ? '2.5rem' : '1rem',
+                      backgroundColor: '#1e293b',
+                      border: '1px solid #1e293b',
+                      borderRadius: '12px',
+                      color: '#ffffff',
+                      fontSize: '0.9rem',
+                      outline: 'none',
+                    }}
+                  />
+                  <Search size={18} color="#f59e0b" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
                 </div>
 
-                {/* 3D Floating Canteen Food Composition */}
-                <div className="lg:col-span-5 relative flex justify-center items-center h-64 lg:h-72">
-                  <div className="relative w-full h-full flex items-center justify-center">
-                    {/* Floating 3D Burger */}
-                    <div className="absolute animate-float-slow" style={{ top: '10%', left: '15%', transformStyle: 'preserve-3d', zIndex: 3 }}>
-                      <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-700 p-2 shadow-2xl border border-amber-300/40 flex items-center justify-center text-4xl transform rotate-12 hover:scale-110 transition-transform">
-                        🍔
-                      </div>
-                    </div>
-
-                    {/* Floating 3D Beverage */}
-                    <div className="absolute animate-float-reverse" style={{ top: '35%', right: '12%', transformStyle: 'preserve-3d', zIndex: 4 }}>
-                      <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 p-2 shadow-2xl border border-orange-300/40 flex items-center justify-center text-3xl transform -rotate-12 hover:scale-110 transition-transform">
-                        🥤
-                      </div>
-                    </div>
-
-                    {/* Floating 3D Coffee Cup */}
-                    <div className="absolute animate-float-slow" style={{ bottom: '10%', left: '30%', transformStyle: 'preserve-3d', zIndex: 2 }}>
-                      <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 p-2 shadow-2xl border border-slate-600 flex items-center justify-center text-3xl transform rotate-6 hover:scale-110 transition-transform">
-                        ☕
-                      </div>
-                    </div>
-
-                    {/* Floating 3D Fries */}
-                    <div className="absolute animate-float-reverse" style={{ bottom: '25%', right: '35%', transformStyle: 'preserve-3d', zIndex: 3 }}>
-                      <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-600 p-2 shadow-xl border border-yellow-200/50 flex items-center justify-center text-2xl transform -rotate-6 hover:scale-110 transition-transform">
-                        🍟
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Active Live Order Tracker Banner (if any) */}
-            {activeOrder && (
-              <div
-                onClick={() => setActiveTab('orders')}
-                className="glass-card card-3d"
-                style={{
-                  padding: '1rem 1.25rem',
-                  background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
-                  border: '1px solid #ea580c',
-                  borderRadius: '18px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '1rem',
-                  boxShadow: '0 8px 24px rgba(234, 88, 12, 0.15)'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                  <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#ea580c', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(234, 88, 12, 0.3)' }}>
-                    <Clock size={22} />
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#1e293b' }}>
-                      Active Order <strong>#{activeOrder.order_number}</strong> is in progress
-                    </div>
-                    <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
-                      Status: <strong style={{ color: '#ea580c' }}>{activeOrder.status}</strong> •
-                      {liveQueueData?.queue_position ? ` Queue Position #${liveQueueData.queue_position}` : ' Tap to track live 3D status'}
-                    </div>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#ea580c', fontWeight: 800, fontSize: '0.82rem' }}>
-                  Track Order <ChevronRight size={16} />
-                </div>
-              </div>
-            )}
-
-            {/* 3D Category Chips Bar & Controls */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-                {/* Category Chips Scroll */}
-                <div className="no-scrollbar" style={{ display: 'flex', gap: '0.65rem', overflowX: 'auto', paddingBottom: '0.35rem', flex: 1, WebkitOverflowScrolling: 'touch' }}>
+                {/* Category Chips Horizontal Selector */}
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: '8px',
+                    overflowX: 'auto',
+                    paddingBottom: '8px',
+                    scrollbarWidth: 'none',
+                  }}
+                >
                   <button
                     onClick={() => setSelectedCategory('ALL')}
-                    className="btn-3d"
                     style={{
-                      whiteSpace: 'nowrap',
-                      padding: '0.6rem 1.25rem',
-                      borderRadius: '9999px',
-                      fontWeight: 800,
-                      fontSize: '0.82rem',
+                      padding: '8px 14px',
+                      borderRadius: '20px',
+                      border: `1px solid ${selectedCategory === 'ALL' ? '#f59e0b' : '#334155'}`,
+                      backgroundColor: selectedCategory === 'ALL' ? '#f59e0b' : '#1e293b',
+                      color: selectedCategory === 'ALL' ? '#020617' : '#cbd5e1',
+                      fontSize: '0.78rem',
+                      fontWeight: selectedCategory === 'ALL' ? 700 : 500,
                       cursor: 'pointer',
-                      border: selectedCategory === 'ALL' ? '1px solid #ea580c' : '1px solid #e2e8f0',
-                      background: selectedCategory === 'ALL' ? 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)' : '#ffffff',
-                      color: selectedCategory === 'ALL' ? '#ffffff' : '#475569',
-                      boxShadow: selectedCategory === 'ALL' ? '0 6px 16px rgba(234, 88, 12, 0.3)' : 'var(--shadow-3d-sm)'
+                      whiteSpace: 'nowrap',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
                     }}
                   >
-                    🍽️ All Items ({products.filter((p) => p.is_active).length})
+                    <Utensils size={14} /> All Items
                   </button>
 
                   {categories.map((cat) => (
                     <button
                       key={cat.id}
                       onClick={() => setSelectedCategory(cat.id)}
-                      className="btn-3d"
                       style={{
-                        whiteSpace: 'nowrap',
-                        padding: '0.6rem 1.25rem',
-                        borderRadius: '9999px',
-                        fontWeight: 800,
-                        fontSize: '0.82rem',
+                        padding: '8px 14px',
+                        borderRadius: '20px',
+                        border: `1px solid ${selectedCategory === cat.id ? '#f59e0b' : '#334155'}`,
+                        backgroundColor: selectedCategory === cat.id ? '#f59e0b' : '#1e293b',
+                        color: selectedCategory === cat.id ? '#020617' : '#cbd5e1',
+                        fontSize: '0.78rem',
+                        fontWeight: selectedCategory === cat.id ? 700 : 500,
                         cursor: 'pointer',
-                        border: selectedCategory === cat.id ? '1px solid #ea580c' : '1px solid #e2e8f0',
-                        background: selectedCategory === cat.id ? 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)' : '#ffffff',
-                        color: selectedCategory === cat.id ? '#ffffff' : '#475569',
-                        boxShadow: selectedCategory === cat.id ? '0 6px 16px rgba(234, 88, 12, 0.3)' : 'var(--shadow-3d-sm)'
+                        whiteSpace: 'nowrap',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
                       }}
                     >
-                      {cat.name}
+                      <FastForward size={14} /> {cat.name}
                     </button>
                   ))}
                 </div>
 
-                {/* Filters */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <button
+                {/* Secondary Filters Row */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
+                  <label
                     onClick={() => setAvailableOnlyFilter(!availableOnlyFilter)}
-                    style={{
-                      padding: '0.5rem 0.9rem',
-                      borderRadius: '10px',
-                      fontSize: '0.78rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      border: availableOnlyFilter ? '1px solid #10b981' : '1px solid #cbd5e1',
-                      background: availableOnlyFilter ? '#ecfdf5' : '#ffffff',
-                      color: availableOnlyFilter ? '#059669' : '#475569'
-                    }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.78rem', color: '#cbd5e1' }}
                   >
-                    {availableOnlyFilter ? '✓ Available Only' : 'Show All Stock'}
-                  </button>
+                    <input
+                      type="checkbox"
+                      checked={availableOnlyFilter}
+                      onChange={() => {}}
+                      style={{ accentColor: '#f59e0b', width: '16px', height: '16px' }}
+                    />
+                    Available Only
+                  </label>
 
                   <select
                     value={sortBy}
-                    onChange={(e: any) => setSortBy(e.target.value)}
-                    style={{ padding: '0.5rem 0.85rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.78rem', fontWeight: 700, color: '#475569', background: '#ffffff' }}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    style={{
+                      backgroundColor: '#1e293b',
+                      color: '#cbd5e1',
+                      border: 'none',
+                      fontSize: '0.78rem',
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                      outline: 'none',
+                      cursor: 'pointer',
+                    }}
                   >
                     <option value="default">Sort: Default</option>
                     <option value="price_low">Price: Low to High</option>
                     <option value="price_high">Price: High to Low</option>
-                    <option value="name">Name: A-Z</option>
+                    <option value="name">Name: A to Z</option>
                   </select>
                 </div>
               </div>
-            </div>
 
-            {/* 3D Food Grid Section */}
-            {loadingProducts ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: '1.5rem' }}>
-                {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-                  <div key={n} className="glass-card" style={{ padding: 0, overflow: 'hidden', height: '340px' }}>
-                    <div className="skeleton" style={{ height: '170px' }} />
-                    <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      <div className="skeleton" style={{ height: '20px', width: '70%', borderRadius: '4px' }} />
-                      <div className="skeleton" style={{ height: '14px', width: '90%', borderRadius: '4px' }} />
-                      <div className="skeleton" style={{ height: '28px', width: '40%', marginTop: '0.5rem', borderRadius: '4px' }} />
-                    </div>
+              {/* Main Product Grid (Matching Flutter MenuTab GridView) */}
+              <div style={{ padding: '16px' }}>
+                {loadingProducts ? (
+                  <div style={{ textAlign: 'center', padding: '60px 0', color: '#f59e0b' }}>
+                    <RefreshCw size={32} className="animate-spin" style={{ margin: '0 auto' }} />
                   </div>
-                ))}
-              </div>
-            ) : filteredProducts.length === 0 ? (
-              <div className="glass-card" style={{ padding: '3.5rem', textAlign: 'center', color: '#64748b' }}>
-                <Utensils size={48} color="#cbd5e1" style={{ margin: '0 auto 1rem auto' }} />
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b' }}>No food items found</h3>
-                <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.25rem' }}>
-                  Try adjusting your search query or category filter.
-                </p>
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
-                {filteredProducts.map((product) => {
-                  const cardQty = cardQuantities[product.id] || 1;
-                  const isAvailable = product.today_availability === 'AVAILABLE' && product.current_stock > 0;
-                  const isLowStock = (product as any).today_availability === 'LOW_STOCK' || (product.current_stock > 0 && product.current_stock <= 10);
+                ) : filteredProducts.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}>
+                    <Utensils size={54} style={{ margin: '0 auto 12px', color: '#475569' }} />
+                    <p style={{ margin: 0, fontSize: '1rem' }}>No food items found.</p>
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))',
+                      gap: '14px',
+                    }}
+                  >
+                    {filteredProducts.map((product) => {
+                      const qty = cardQuantities[product.id] || 1;
+                      const isOutOfStock = product.today_availability === 'OUT_OF_STOCK' || product.current_stock <= 0;
+                      const imgUrl = getMediaUrl(product.image);
 
-                  return (
-                    <div key={product.id} className="card-3d-wrapper">
-                      <div
-                        className="card-3d"
-                        onMouseMove={(e) => {
-                          if (window.innerWidth < 768) return;
-                          const rect = e.currentTarget.getBoundingClientRect();
-                          const x = e.clientX - rect.left - rect.width / 2;
-                          const y = e.clientY - rect.top - rect.height / 2;
-                          e.currentTarget.style.setProperty('--rx', `${-y / 18}deg`);
-                          e.currentTarget.style.setProperty('--ry', `${x / 18}deg`);
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.setProperty('--rx', '0deg');
-                          e.currentTarget.style.setProperty('--ry', '0deg');
-                        }}
-                        style={{
-                          padding: 0,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'space-between',
-                          height: '100%',
-                          minHeight: '350px'
-                        }}
-                      >
-                        {/* Image Box */}
-                        <div className="card-3d-image-box" style={{ height: '175px', width: '100%', position: 'relative' }}>
-                          <img
-                            src={getMediaUrl(product.image) || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80'}
-                            alt={product.name}
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'cover'
-                            }}
-                            onError={(e) => {
-                              (e.target as HTMLElement).setAttribute('src', 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80');
-                            }}
-                          />
-
-                          {/* Category Badge */}
-                          <div className="card-3d-badge" style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(15,23,42,0.82)', color: '#ffffff', backdropFilter: 'blur(6px)', padding: '0.25rem 0.65rem', borderRadius: '9999px', fontSize: '0.68rem', fontWeight: 800 }}>
-                            {product.category_name || (typeof product.category === 'object' ? (product.category as any).name : 'General')}
-                          </div>
-
-                          {/* Status Badge */}
-                          <div className="card-3d-badge" style={{ position: 'absolute', top: '10px', right: '10px' }}>
-                            {!isAvailable ? (
-                              <span className="badge badge-danger" style={{ fontSize: '0.65rem' }}>● OUT OF STOCK</span>
-                            ) : isLowStock ? (
-                              <span className="badge badge-warning" style={{ fontSize: '0.65rem' }}>● LOW STOCK ({product.current_stock})</span>
+                      return (
+                        <div
+                          key={product.id}
+                          style={{
+                            backgroundColor: '#1e293b',
+                            borderRadius: '14px',
+                            border: '1px solid #334155',
+                            overflow: 'hidden',
+                            display: 'flex',
+                            flexDirection: 'column',
+                          }}
+                        >
+                          {/* Image Section */}
+                          <div style={{ position: 'relative', height: '120px', backgroundColor: '#334155' }}>
+                            {imgUrl ? (
+                              <img
+                                src={imgUrl}
+                                alt={product.name}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
                             ) : (
-                              <span className="badge badge-success" style={{ fontSize: '0.65rem' }}>● AVAILABLE</span>
+                              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
+                                <Utensils size={36} />
+                              </div>
                             )}
-                          </div>
-                        </div>
 
-                        {/* Product Content Details */}
-                        <div style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', gap: '0.6rem', flex: 1, justifyContent: 'space-between' }}>
-                          <div>
-                            <h3 style={{ fontSize: '1.05rem', fontWeight: 900, color: '#1e293b', lineHeight: 1.25 }}>
-                              {product.name}
-                            </h3>
-                            <p style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.25rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                              {product.description || 'Delicious freshly prepared canteen item.'}
-                            </p>
-                          </div>
-
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9' }}>
-                            <div>
-                              <span style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 700, display: 'block', textTransform: 'uppercase' }}>Price</span>
-                              <span style={{ fontSize: '1.25rem', fontWeight: 900, color: '#ea580c' }}>
-                                ₹{product.price}
-                              </span>
+                            {/* Veg / Non-Veg Indicator */}
+                            <div
+                              style={{
+                                position: 'absolute',
+                                top: '8px',
+                                left: '8px',
+                                backgroundColor: 'rgba(0,0,0,0.6)',
+                                border: `1.5px solid ${product.is_veg !== false ? '#22c55e' : '#ef4444'}`,
+                                borderRadius: '4px',
+                                padding: '3px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <div
+                                style={{
+                                  width: '6px',
+                                  height: '6px',
+                                  borderRadius: '50%',
+                                  backgroundColor: product.is_veg !== false ? '#22c55e' : '#ef4444',
+                                }}
+                              />
                             </div>
 
-                            {isAvailable ? (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                {/* Quantity Stepper */}
-                                <div style={{ display: 'flex', alignItems: 'center', background: '#f1f5f9', borderRadius: '10px', padding: '0.15rem' }}>
+                            {/* Out of Stock Badge */}
+                            {isOutOfStock && (
+                              <div
+                                style={{
+                                  position: 'absolute',
+                                  top: '8px',
+                                  right: '8px',
+                                  backgroundColor: 'rgba(153, 27, 27, 0.9)',
+                                  color: '#ffffff',
+                                  fontSize: '0.65rem',
+                                  fontWeight: 800,
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                }}
+                              >
+                                OUT OF STOCK
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Details Section */}
+                          <div style={{ padding: '10px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                            <div>
+                              <h4
+                                style={{
+                                  margin: '0 0 2px',
+                                  fontSize: '0.88rem',
+                                  fontWeight: 700,
+                                  color: '#ffffff',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                }}
+                              >
+                                {product.name}
+                              </h4>
+                              <p style={{ margin: '0 0 6px', fontSize: '0.72rem', color: '#94a3b8' }}>
+                                {product.category_name || 'Canteen Special'}
+                              </p>
+                              <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#f59e0b', marginBottom: '8px' }}>
+                                ₹{Number(product.price).toFixed(2)}
+                              </div>
+                            </div>
+
+                            {/* Actions / Quantity Stepper */}
+                            {!isOutOfStock ? (
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    backgroundColor: '#0f172a',
+                                    borderRadius: '6px',
+                                    border: '1px solid #334155',
+                                  }}
+                                >
                                   <button
-                                    onClick={() => setCardQuantities(prev => ({ ...prev, [product.id]: Math.max(1, (prev[product.id] || 1) - 1) }))}
-                                    style={{ width: '26px', height: '26px', border: 'none', background: '#ffffff', borderRadius: '8px', cursor: 'pointer', fontWeight: 800, color: '#475569', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}
+                                    onClick={() => {
+                                      if (qty > 1) {
+                                        setCardQuantities({ ...cardQuantities, [product.id]: qty - 1 });
+                                      }
+                                    }}
+                                    style={{ background: 'none', border: 'none', color: '#ffffff', padding: '4px 6px', cursor: 'pointer' }}
                                   >
-                                    -
+                                    <Minus size={12} />
                                   </button>
-                                  <span style={{ padding: '0 0.45rem', fontSize: '0.82rem', fontWeight: 800, color: '#1e293b' }}>
-                                    {cardQty}
+                                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#ffffff', minWidth: '14px', textAlign: 'center' }}>
+                                    {qty}
                                   </span>
                                   <button
-                                    onClick={() => setCardQuantities(prev => ({ ...prev, [product.id]: Math.min(product.current_stock, (prev[product.id] || 1) + 1) }))}
-                                    style={{ width: '26px', height: '26px', border: 'none', background: '#ffffff', borderRadius: '8px', cursor: 'pointer', fontWeight: 800, color: '#475569', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}
+                                    onClick={() => {
+                                      if (qty < product.current_stock) {
+                                        setCardQuantities({ ...cardQuantities, [product.id]: qty + 1 });
+                                      }
+                                    }}
+                                    style={{ background: 'none', border: 'none', color: '#ffffff', padding: '4px 6px', cursor: 'pointer' }}
                                   >
-                                    +
+                                    <Plus size={12} />
                                   </button>
                                 </div>
 
                                 <button
-                                  onClick={() => handleAddToCart(product, cardQty)}
-                                  className="btn-3d btn-3d-primary card-3d-button"
-                                  style={{ padding: '0.55rem 0.95rem', fontSize: '0.78rem' }}
+                                  onClick={() => handleAddToCart(product, qty)}
+                                  style={{
+                                    flex: 1,
+                                    backgroundColor: '#f59e0b',
+                                    color: '#020617',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    padding: '6px',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                  }}
                                 >
-                                  <Plus size={15} /> ADD
+                                  <ShoppingCart size={16} />
                                 </button>
                               </div>
                             ) : (
-                              <button disabled className="btn btn-secondary" style={{ opacity: 0.6, fontSize: '0.75rem', cursor: 'not-allowed' }}>
+                              <div
+                                style={{
+                                  backgroundColor: '#334155',
+                                  color: '#64748b',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 600,
+                                  textAlign: 'center',
+                                  padding: '6px',
+                                  borderRadius: '6px',
+                                }}
+                              >
                                 Unavailable
-                              </button>
+                              </div>
                             )}
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ======================= MY ORDERS TAB ======================= */}
-        {activeTab === 'orders' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '850px', margin: '0 auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#1e293b', margin: 0 }}>
-                  Order History & Live Status
-                </h2>
-                <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.2rem 0 0 0' }}>
-                  Track your physical canteen counter payments and kitchen status in real time.
-                </p>
-              </div>
-              <button onClick={loadMyOrders} className="btn btn-secondary" style={{ padding: '0.45rem 0.85rem', fontSize: '0.8rem' }}>
-                <RefreshCw size={14} /> Refresh Status
-              </button>
-            </div>
-
-            {/* Active Live Order Stepper Card (if any) */}
-            {activeOrder && (
-              <div className="glass-card" style={{ padding: '1.5rem', background: '#ffffff', border: '2px solid #ea580c', borderRadius: '20px', boxShadow: '0 8px 24px rgba(234, 88, 12, 0.15)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  <div>
-                    <span className="badge badge-primary" style={{ marginBottom: '0.4rem' }}>LIVE ACTIVE ORDER</span>
-                    <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#1e293b', margin: 0 }}>
-                      Order #{activeOrder.order_number}
-                    </h3>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#ea580c' }}>
-                      ₹{activeOrder.total_amount}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                      {new Date(activeOrder.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Queue Position Highlight Box */}
-                {liveQueueData?.queue_position && (
-                  <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '12px', padding: '1rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-around', textAlign: 'center' }}>
-                    <div>
-                      <div style={{ fontSize: '0.72rem', color: '#9a3412', fontWeight: 800, textTransform: 'uppercase' }}>Your Position</div>
-                      <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#ea580c' }}>#{liveQueueData.queue_position}</div>
-                    </div>
-                    <div style={{ borderLeft: '1px solid #fed7aa', height: '35px' }} />
-                    <div>
-                      <div style={{ fontSize: '0.72rem', color: '#9a3412', fontWeight: 800, textTransform: 'uppercase' }}>Orders Ahead</div>
-                      <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#1e293b' }}>{liveQueueData.orders_ahead}</div>
-                    </div>
+                      );
+                    })}
                   </div>
                 )}
+              </div>
 
-                {/* Stepper Progress Timeline */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative', marginTop: '1.5rem', marginBottom: '1.5rem' }}>
-                  {/* Stepper Progress Bar */}
-                  <div style={{ position: 'absolute', top: '16px', left: '10%', right: '10%', height: '3px', background: '#e2e8f0', zIndex: 1 }}>
-                    <div
+              {/* Floating Action Button for View Cart (Matching Flutter) */}
+              {cartItemCount > 0 && (
+                <button
+                  onClick={() => setIsCartOpen(true)}
+                  style={{
+                    position: 'fixed',
+                    bottom: '80px',
+                    right: '20px',
+                    backgroundColor: '#f59e0b',
+                    color: '#020617',
+                    border: 'none',
+                    borderRadius: '30px',
+                    padding: '12px 20px',
+                    fontWeight: 800,
+                    fontSize: '0.9rem',
+                    boxShadow: '0 8px 25px rgba(245, 158, 11, 0.4)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    zIndex: 900,
+                  }}
+                >
+                  <div style={{ position: 'relative' }}>
+                    <ShoppingBag size={20} />
+                    <span
                       style={{
-                        height: '100%',
-                        background: '#ea580c',
-                        width:
-                          activeOrder.status === 'DELIVERED'
-                            ? '100%'
-                            : activeOrder.status === 'READY'
-                            ? '75%'
-                            : activeOrder.status === 'PREPARING'
-                            ? '50%'
-                            : activeOrder.status === 'CONFIRMED'
-                            ? '25%'
-                            : '0%',
-                        transition: 'width 0.4s ease'
+                        position: 'absolute',
+                        top: '-8px',
+                        right: '-8px',
+                        backgroundColor: '#ef4444',
+                        color: '#ffffff',
+                        fontSize: '0.65rem',
+                        fontWeight: 800,
+                        width: '16px',
+                        height: '16px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                       }}
-                    />
+                    >
+                      {cartItemCount}
+                    </span>
                   </div>
+                  <span>View Cart (₹{cartSubtotal.toFixed(0)})</span>
+                </button>
+              )}
+            </div>
+          )}
 
-                  {/* Steps */}
-                  {[
-                    { label: 'Payment Pending', active: true, done: activeOrder.payment_status === 'PAID' },
-                    { label: 'Confirmed', active: activeOrder.status !== 'AWAITING_PAYMENT', done: activeOrder.status === 'PREPARING' || activeOrder.status === 'READY' || activeOrder.status === 'DELIVERED' },
-                    { label: 'Preparing', active: activeOrder.status === 'PREPARING' || activeOrder.status === 'READY' || activeOrder.status === 'DELIVERED', done: activeOrder.status === 'READY' || activeOrder.status === 'DELIVERED' },
-                    { label: 'Ready for Pickup', active: activeOrder.status === 'READY' || activeOrder.status === 'DELIVERED', done: activeOrder.status === 'DELIVERED' }
-                  ].map((step, idx) => (
-                    <div key={idx} style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', flex: 1 }}>
-                      <div
-                        style={{
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '50%',
-                          background: step.done ? '#10b981' : step.active ? '#ea580c' : '#ffffff',
-                          color: step.done || step.active ? '#ffffff' : '#94a3b8',
-                          border: step.done || step.active ? 'none' : '2px solid #cbd5e1',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontWeight: 800,
-                          fontSize: '0.8rem'
-                        }}
-                      >
-                        {step.done ? '✓' : idx + 1}
-                      </div>
-                      <div style={{ fontSize: '0.72rem', fontWeight: 700, color: step.active ? '#1e293b' : '#94a3b8', textAlign: 'center' }}>
-                        {step.label}
-                      </div>
-                    </div>
-                  ))}
+          {/* TAB 1: ORDERS & QUEUE TAB (Matching Flutter OrdersTab) */}
+          {activeTab === 'orders' && (
+            <div style={{ padding: '16px' }}>
+              {loadingOrders ? (
+                <div style={{ textAlign: 'center', padding: '60px 0', color: '#f59e0b' }}>
+                  <RefreshCw size={32} className="animate-spin" style={{ margin: '0 auto' }} />
                 </div>
-
-                {/* Print Receipt Action */}
-                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
-                  <button
-                    onClick={() => setReceiptOrder(activeOrder)}
-                    className="btn btn-secondary"
-                    style={{ padding: '0.45rem 0.9rem', fontSize: '0.8rem' }}
-                  >
-                    <Printer size={14} /> View / Print Bill
-                  </button>
+              ) : orders.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}>
+                  <Receipt size={54} style={{ margin: '0 auto 12px', color: '#475569' }} />
+                  <p style={{ margin: 0, fontSize: '1rem' }}>No orders placed yet.</p>
                 </div>
-              </div>
-            )}
-
-            {/* Orders History List */}
-            {loadingOrders ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {[1, 2, 3].map((n) => (
-                  <div key={n} className="skeleton" style={{ height: '90px', borderRadius: '16px' }} />
-                ))}
-              </div>
-            ) : orders.length === 0 ? (
-              <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
-                <ShoppingBag size={44} color="#cbd5e1" style={{ margin: '0 auto 1rem auto' }} />
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b' }}>No orders placed yet</h3>
-                <p style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '0.25rem' }}>
-                  Browse our menu and place your food order ahead!
-                </p>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {orders.map((o) => (
-                  <div key={o.id} className="glass-card" style={{ padding: '1.15rem 1.35rem', borderRadius: '16px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                          <span style={{ fontWeight: 900, fontSize: '1rem', color: '#1e293b' }}>
-                            #{o.order_number}
-                          </span>
-                          <span className={`badge ${o.status === 'DELIVERED' ? 'badge-success' : o.status === 'CANCELLED' ? 'badge-danger' : 'badge-primary'}`}>
-                            {o.status}
-                          </span>
-                          <span className={`badge ${o.payment_status === 'PAID' ? 'badge-success' : 'badge-warning'}`}>
-                            {o.payment_status === 'PAID' ? 'PAID' : 'PAYMENT PENDING'}
-                          </span>
+              ) : (
+                <div>
+                  {/* ACTIVE ORDERS & LIVE QUEUE SECTION */}
+                  {activeOrders.length > 0 && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Flame size={20} color="#f59e0b" />
+                          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#ffffff' }}>
+                            Active Orders & Live Queue
+                          </h3>
                         </div>
-                        <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.3rem' }}>
-                          {new Date(o.created_at).toLocaleDateString()} at {new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {o.items?.length || 0} items
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#ea580c' }}>
-                          ₹{o.total_amount}
-                        </div>
-                        <button
-                          onClick={() => setReceiptOrder(o)}
-                          className="btn btn-secondary"
-                          style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem' }}
+                        <div
+                          style={{
+                            backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                            padding: '4px 8px',
+                            borderRadius: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontSize: '0.68rem',
+                            fontWeight: 600,
+                            color: '#4ade80',
+                          }}
                         >
-                          <Printer size={14} /> Bill
-                        </button>
+                          <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#4ade80' }} />
+                          Live Polling (5s)
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
 
-        {/* ======================= SUPPORT TAB ======================= */}
-        {activeTab === 'support' && (
-          <div style={{ maxWidth: '650px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div className="glass-card" style={{ padding: '1.75rem', borderRadius: '20px' }}>
-              <h2 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#1e293b', marginBottom: '0.4rem' }}>
-                Payment Support & Issue Desk
-              </h2>
-              <p style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: '1.25rem' }}>
-                Have a query regarding payment at the canteen counter or order status? Submit a ticket directly to Canteen Administration.
+                      {activeOrders.map((order) => {
+                        const itemsStr = order.items?.map((i) => `${i.product_name || i.product?.name} (x${i.quantity})`).join(', ');
+                        const isPaid = order.payment_status === 'COMPLETED' || order.is_paid;
+
+                        // Stepper calculation matching Flutter OrdersTab
+                        let currentStepIndex = 0;
+                        if (isPaid && (order.status === 'PENDING' || order.order_status === 'PENDING')) {
+                          currentStepIndex = 1;
+                        } else if (order.status === 'PREPARING' || order.order_status === 'PREPARING') {
+                          currentStepIndex = 2;
+                        } else if (order.status === 'READY' || order.order_status === 'READY') {
+                          currentStepIndex = 3;
+                        } else if (order.status === 'COMPLETED' || order.order_status === 'COMPLETED') {
+                          currentStepIndex = 4;
+                        }
+
+                        const statusSteps = ['Payment Pending', 'Payment Confirmed', 'Preparing', 'Ready', 'Completed'];
+
+                        return (
+                          <div
+                            key={order.id}
+                            style={{
+                              backgroundColor: '#1e293b',
+                              borderRadius: '16px',
+                              padding: '16px',
+                              marginBottom: '16px',
+                              border: '1.5px solid rgba(245, 158, 11, 0.3)',
+                              boxShadow: '0 8px 20px rgba(0, 0, 0, 0.3)',
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span
+                                  style={{
+                                    backgroundColor: '#f59e0b',
+                                    color: '#020617',
+                                    fontWeight: 800,
+                                    fontSize: '0.85rem',
+                                    padding: '4px 10px',
+                                    borderRadius: '6px',
+                                  }}
+                                >
+                                  {order.order_code}
+                                </span>
+                                {order.token_number && (
+                                  <span style={{ fontSize: '0.78rem', color: '#cbd5e1', fontWeight: 600 }}>
+                                    Token: #{order.token_number}
+                                  </span>
+                                )}
+                              </div>
+
+                              {order.queue_number && (
+                                <span
+                                  style={{
+                                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                                    border: '1px solid rgba(59, 130, 246, 0.4)',
+                                    color: '#60a5fa',
+                                    padding: '4px 10px',
+                                    borderRadius: '20px',
+                                    fontSize: '0.78rem',
+                                    fontWeight: 800,
+                                  }}
+                                >
+                                  Queue #{order.queue_number}
+                                </span>
+                              )}
+                            </div>
+
+                            <p style={{ margin: '0 0 10px', fontSize: '0.82rem', color: '#cbd5e1', lineHeight: 1.4 }}>
+                              {itemsStr}
+                            </p>
+
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                              <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                                Payment: <strong style={{ color: isPaid ? '#4ade80' : '#fb923c' }}>{isPaid ? '✓ PAID' : 'Pending at Counter'}</strong>
+                              </div>
+                              <div style={{ fontSize: '1rem', fontWeight: 800, color: '#f59e0b' }}>
+                                ₹{Number(order.total_amount).toFixed(2)}
+                              </div>
+                            </div>
+
+                            {/* Stepper Bar */}
+                            <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
+                              {[0, 1, 2, 3, 4].map((stepIdx) => (
+                                <div
+                                  key={stepIdx}
+                                  style={{
+                                    flex: 1,
+                                    height: '4px',
+                                    backgroundColor: stepIdx <= currentStepIndex ? '#f59e0b' : '#334155',
+                                    borderRadius: '2px',
+                                  }}
+                                />
+                              ))}
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#ffffff' }}>
+                                Status: {statusSteps[currentStepIndex]}
+                              </span>
+                              <button
+                                onClick={() => setViewingReceiptOrder(order)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: '#f59e0b',
+                                  fontSize: '0.78rem',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                }}
+                              >
+                                <Receipt size={14} /> View Receipt
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* ORDER HISTORY SECTION */}
+                  <div>
+                    <h3 style={{ margin: '0 0 12px', fontSize: '1rem', fontWeight: 800, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Clock size={20} color="#94a3b8" /> Order History
+                    </h3>
+
+                    {historyOrders.length === 0 ? (
+                      <p style={{ fontSize: '0.82rem', color: '#64748b' }}>No completed or cancelled orders.</p>
+                    ) : (
+                      historyOrders.map((order) => {
+                        const isCancelled = order.status === 'CANCELLED' || order.status === 'REJECTED';
+
+                        return (
+                          <div
+                            key={order.id}
+                            style={{
+                              backgroundColor: '#1e293b',
+                              borderRadius: '12px',
+                              padding: '12px 14px',
+                              marginBottom: '10px',
+                              border: '1px solid #334155',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <div
+                                style={{
+                                  padding: '8px',
+                                  borderRadius: '50%',
+                                  backgroundColor: isCancelled ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)',
+                                  color: isCancelled ? '#ef4444' : '#4ade80',
+                                }}
+                              >
+                                {isCancelled ? <XCircle size={18} /> : <CheckCircle size={18} />}
+                              </div>
+                              <div>
+                                <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#ffffff' }}>
+                                  {order.order_code}
+                                </div>
+                                <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                                  {new Date(order.created_at).toLocaleString('en-US', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#f59e0b' }}>
+                                ₹{Number(order.total_amount).toFixed(2)}
+                              </div>
+                              <button
+                                onClick={() => setViewingReceiptOrder(order)}
+                                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                              >
+                                <Receipt size={18} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 2: SUPPORT TAB (Matching Flutter SupportTab) */}
+          {activeTab === 'support' && (
+            <div style={{ padding: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                <SupportIcon size={26} color="#f59e0b" />
+                <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#ffffff' }}>
+                  Help & Support
+                </h2>
+              </div>
+              <p style={{ margin: '0 0 24px', fontSize: '0.83rem', color: '#94a3b8' }}>
+                Have an issue with an order or payment? Contact the canteen team below.
               </p>
 
-              {issueSuccess && (
-                <div style={{ padding: '0.85rem', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '8px', color: '#059669', fontSize: '0.82rem', fontWeight: 700, marginBottom: '1rem' }}>
-                  {issueSuccess}
+              {supportMessage && (
+                <div
+                  style={{
+                    backgroundColor: supportMessage.isSuccess ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                    border: `1px solid ${supportMessage.isSuccess ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
+                    color: supportMessage.isSuccess ? '#4ade80' : '#fca5a5',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    fontSize: '0.83rem',
+                    marginBottom: '16px',
+                  }}
+                >
+                  {supportMessage.text}
                 </div>
               )}
 
-              {issueError && (
-                <div style={{ padding: '0.85rem', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#dc2626', fontSize: '0.82rem', fontWeight: 700, marginBottom: '1rem' }}>
-                  {issueError}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmitSupportTicket} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <form onSubmit={handleSubmitSupportTicket} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.35rem' }}>
-                    Order Number (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. CAN-4821"
-                    value={issueOrderCode}
-                    onChange={(e) => setIssueOrderCode(e.target.value)}
-                    className="input-field"
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.35rem' }}>
-                    Issue Category
+                  <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#cbd5e1', display: 'block', marginBottom: '6px' }}>
+                    Related Order (Optional)
                   </label>
                   <select
-                    value={issueCategory}
-                    onChange={(e) => setIssueCategory(e.target.value)}
-                    className="input-field"
+                    value={supportOrderCode}
+                    onChange={(e) => setSupportOrderCode(e.target.value)}
+                    style={{
+                      width: '100%',
+                      height: '44px',
+                      backgroundColor: '#1e293b',
+                      border: '1px solid #334155',
+                      borderRadius: '10px',
+                      color: '#ffffff',
+                      fontSize: '0.85rem',
+                      padding: '0 12px',
+                      outline: 'none',
+                    }}
                   >
-                    <option value="ORDER_ISSUE">Order Status Query</option>
-                    <option value="COUNTER_PAYMENT">Counter Payment Verification Query</option>
-                    <option value="REFUND">Cancellation & Refund Request</option>
-                    <option value="OTHER">General Support</option>
+                    <option value="">None / General Issue</option>
+                    {orders.map((o) => (
+                      <option key={o.id} value={o.order_code}>
+                        {o.order_code} (₹{Number(o.total_amount).toFixed(0)})
+                      </option>
+                    ))}
                   </select>
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.35rem' }}>
-                    Issue Description *
+                  <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#cbd5e1', display: 'block', marginBottom: '6px' }}>
+                    Issue Category
+                  </label>
+                  <select
+                    value={supportCategory}
+                    onChange={(e) => setSupportCategory(e.target.value)}
+                    style={{
+                      width: '100%',
+                      height: '44px',
+                      backgroundColor: '#1e293b',
+                      border: '1px solid #334155',
+                      borderRadius: '10px',
+                      color: '#ffffff',
+                      fontSize: '0.85rem',
+                      padding: '0 12px',
+                      outline: 'none',
+                    }}
+                  >
+                    <option value="ORDER_ISSUE">Order Issue / Missing Item</option>
+                    <option value="PAYMENT_ISSUE">Payment Issue / Verification</option>
+                    <option value="QUALITY_ISSUE">Food Quality Concern</option>
+                    <option value="SUGGESTION">General Feedback / Suggestion</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#cbd5e1', display: 'block', marginBottom: '6px' }}>
+                    Describe Your Concern
                   </label>
                   <textarea
                     rows={4}
-                    placeholder="Describe your issue or query clearly..."
-                    value={issueDescription}
-                    onChange={(e) => setIssueDescription(e.target.value)}
-                    required
-                    className="input-field"
-                    style={{ resize: 'vertical' }}
+                    placeholder="Provide details about the issue..."
+                    value={supportDescription}
+                    onChange={(e) => setSupportDescription(e.target.value)}
+                    style={{
+                      width: '100%',
+                      backgroundColor: '#1e293b',
+                      border: '1px solid #334155',
+                      borderRadius: '10px',
+                      color: '#ffffff',
+                      fontSize: '0.85rem',
+                      padding: '12px',
+                      outline: 'none',
+                      resize: 'vertical',
+                    }}
                   />
                 </div>
 
-                <button type="submit" disabled={issueSubmitting} className="btn btn-primary" style={{ padding: '0.75rem', fontWeight: 800 }}>
-                  {issueSubmitting ? 'Submitting...' : 'Submit Support Ticket'}
+                <button
+                  type="submit"
+                  disabled={isSubmittingSupport}
+                  style={{
+                    width: '100%',
+                    height: '48px',
+                    backgroundColor: '#f59e0b',
+                    color: '#020617',
+                    border: 'none',
+                    borderRadius: '10px',
+                    fontSize: '0.9rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  {isSubmittingSupport ? <RefreshCw size={18} className="animate-spin" /> : 'SUBMIT TICKET'}
                 </button>
               </form>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* ======================= PROFILE TAB ======================= */}
-        {activeTab === 'profile' && (
-          <div style={{ maxWidth: '550px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div className="glass-card" style={{ padding: '2rem', borderRadius: '20px', textAlign: 'center' }}>
-              <div style={{ width: '70px', height: '70px', borderRadius: '50%', background: '#fff7ed', border: '2px solid #fed7aa', color: '#ea580c', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem auto' }}>
-                <UserIcon size={32} />
-              </div>
-              <h2 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#1e293b', margin: 0 }}>
-                {user.full_name}
-              </h2>
-              <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '0.2rem' }}>
-                {user.email}
-              </div>
-              <div style={{ marginTop: '0.65rem' }}>
-                <span className="badge badge-primary">{user.role}</span>
-              </div>
-
-              <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '0.75rem', textAlign: 'left', fontSize: '0.85rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#64748b' }}>Department / Class:</span>
-                  <span style={{ fontWeight: 700, color: '#1e293b' }}>{user.department || 'SAEC College'}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#64748b' }}>Mobile Number:</span>
-                  <span style={{ fontWeight: 700, color: '#1e293b' }}>{user.mobile_number || 'N/A'}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#64748b' }}>Status:</span>
-                  <span style={{ fontWeight: 700, color: '#10b981' }}>{user.status}</span>
-                </div>
-              </div>
-
-              <button
-                onClick={onLogout}
-                className="btn btn-secondary"
-                style={{ width: '100%', marginTop: '1.5rem', color: '#ef4444', borderColor: '#fecaca' }}
+          {/* TAB 3: PROFILE TAB (Matching Flutter ProfileTab) */}
+          {activeTab === 'profile' && (
+            <div style={{ padding: '20px' }}>
+              {/* Header Card */}
+              <div
+                style={{
+                  backgroundColor: '#1e293b',
+                  borderRadius: '16px',
+                  padding: '20px',
+                  border: '1px solid #334155',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '16px',
+                  marginBottom: '24px',
+                }}
               >
-                <LogOut size={16} /> Log Out Account
+                <div
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '50%',
+                    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                    color: '#f59e0b',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  {user.role === 'FACULTY' ? <Briefcase size={32} /> : <GraduationCap size={32} />}
+                </div>
+
+                <div style={{ overflow: 'hidden' }}>
+                  <h3 style={{ margin: '0 0 4px', fontSize: '1.15rem', fontWeight: 800, color: '#ffffff' }}>
+                    {user.full_name || user.email}
+                  </h3>
+                  <p style={{ margin: '0 0 8px', fontSize: '0.83rem', color: '#94a3b8', wordBreak: 'break-all' }}>
+                    {user.email}
+                  </p>
+                  <span
+                    style={{
+                      backgroundColor: '#f59e0b',
+                      color: '#020617',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      padding: '3px 10px',
+                      borderRadius: '12px',
+                    }}
+                  >
+                    {user.role}
+                  </span>
+                </div>
+              </div>
+
+              {/* Details Group */}
+              <h4 style={{ margin: '0 0 12px', fontSize: '0.9rem', fontWeight: 700, color: '#cbd5e1' }}>
+                Account & Academic Information
+              </h4>
+
+              <div
+                style={{
+                  backgroundColor: '#1e293b',
+                  borderRadius: '14px',
+                  border: '1px solid #334155',
+                  overflow: 'hidden',
+                  marginBottom: '32px',
+                }}
+              >
+                {[
+                  { icon: <Briefcase size={18} color="#f59e0b" />, label: 'Department', value: user.department },
+                  { icon: <Badge size={18} color="#f59e0b" />, label: 'Register / Employee ID', value: user.college_id || user.student_profile?.register_number },
+                  { icon: <Clock size={18} color="#f59e0b" />, label: 'Academic Year', value: user.year ? `Year ${user.year}` : null },
+                  { icon: <Phone size={18} color="#f59e0b" />, label: 'Mobile Number', value: user.mobile_number },
+                  { icon: <ShieldCheck size={18} color="#f59e0b" />, label: 'Account Status', value: user.is_active ? 'Active Approved' : 'Pending Approval' },
+                ]
+                  .filter((item) => item.value)
+                  .map((item, idx, arr) => (
+                    <div
+                      key={item.label}
+                      style={{
+                        padding: '14px 16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        borderBottom: idx < arr.length - 1 ? '1px solid #334155' : 'none',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {item.icon}
+                        <span style={{ fontSize: '0.83rem', color: '#94a3b8' }}>{item.label}</span>
+                      </div>
+                      <span style={{ fontSize: '0.83rem', fontWeight: 600, color: '#ffffff' }}>{item.value}</span>
+                    </div>
+                  ))}
+              </div>
+
+              {/* Logout Button */}
+              <button
+                onClick={() => setShowLogoutConfirm(true)}
+                style={{
+                  width: '100%',
+                  height: '48px',
+                  backgroundColor: 'rgba(153, 27, 27, 0.8)',
+                  color: '#ffffff',
+                  border: '1px solid #b91c1c',
+                  borderRadius: '10px',
+                  fontSize: '0.9rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                }}
+              >
+                <LogOut size={18} /> LOGOUT
               </button>
             </div>
-          </div>
-        )}
-      </main>
+          )}
+        </div>
 
-      {/* ======================= CART DRAWER (Desktop & Mobile Sheet) ======================= */}
+        {/* BOTTOM NAVIGATION BAR (Matching Flutter BottomNavigationBar) */}
+        <nav
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: '#1e293b',
+            borderTop: '1px solid #334155',
+            display: 'flex',
+            justifyContent: 'space-around',
+            padding: '8px 0',
+            zIndex: 800,
+          }}
+        >
+          {[
+            { id: 'menu', label: 'Menu', icon: <Utensils size={20} /> },
+            { id: 'orders', label: 'Orders & Queue', icon: <Receipt size={20} /> },
+            { id: 'support', label: 'Support', icon: <SupportIcon size={20} /> },
+            { id: 'profile', label: 'Profile', icon: <UserIcon size={20} /> },
+          ].map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: isActive ? '#f59e0b' : '#94a3b8',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.72rem',
+                  fontWeight: isActive ? 700 : 500,
+                }}
+              >
+                {tab.icon}
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* CART DRAWER OVERLAY (Matching Flutter CartDrawer) */}
       {isCartOpen && (
-        <div className="modal-overlay" onClick={() => setIsCartOpen(false)}>
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.8)',
+            zIndex: 1000,
+            display: 'flex',
+            justifyContent: 'flex-end',
+          }}
+        >
           <div
-            className="modal-content"
-            onClick={(e) => e.stopPropagation()}
             style={{
-              position: 'fixed',
-              right: 0,
-              top: 0,
-              bottom: 0,
-              maxWidth: '440px',
-              height: '100vh',
-              borderRadius: '24px 0 0 24px',
+              width: '100%',
+              maxWidth: '420px',
+              backgroundColor: '#1e293b',
+              height: '100%',
+              padding: '20px',
               display: 'flex',
               flexDirection: 'column',
-              padding: 0
+              justifyContent: 'space-between',
+              overflowY: 'auto',
             }}
           >
-            {/* Header */}
-            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.1rem', fontWeight: 900, color: '#1e293b' }}>
-                <ShoppingCart size={20} color="#ea580c" /> Your Cart ({cartTotalCount})
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <ShoppingCart size={22} color="#f59e0b" />
+                  <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#ffffff' }}>Your Food Cart</h3>
+                </div>
+                {cart.length > 0 && (
+                  <button
+                    onClick={handleClearCart}
+                    style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.78rem', cursor: 'pointer' }}
+                  >
+                    Clear All
+                  </button>
+                )}
               </div>
-              <button onClick={() => setIsCartOpen(false)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}>
-                <X size={20} />
-              </button>
-            </div>
+              <div style={{ height: '1px', backgroundColor: '#334155', marginBottom: '16px' }} />
 
-            {/* Cart Items List */}
-            <div style={{ flex: 1, padding: '1.25rem 1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {cart.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#64748b' }}>
-                  <ShoppingCart size={44} color="#cbd5e1" style={{ margin: '0 auto 1rem auto' }} />
-                  <div style={{ fontWeight: 800, color: '#1e293b' }}>Your cart is empty</div>
-                  <div style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>Add delicious food items from the canteen menu.</div>
+                <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}>
+                  <ShoppingCart size={54} style={{ margin: '0 auto 12px', color: '#475569' }} />
+                  <p style={{ margin: 0, fontSize: '0.95rem' }}>Your cart is empty</p>
                 </div>
               ) : (
-                cart.map((item) => (
-                  <div key={item.product.id} style={{ display: 'flex', gap: '0.85rem', alignItems: 'center', padding: '0.75rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                    <img
-                      src={getMediaUrl(item.product.image) || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop&q=80'}
-                      alt={item.product.name}
-                      style={{ width: '54px', height: '54px', borderRadius: '8px', objectFit: 'cover' }}
-                    />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#1e293b' }}>{item.product.name}</div>
-                      <div style={{ fontSize: '0.82rem', color: '#ea580c', fontWeight: 800 }}>₹{item.product.price}</div>
-                    </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {cart.map((item) => {
+                    const imgUrl = getMediaUrl(item.product.image);
+                    return (
+                      <div key={item.product.id} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '44px', height: '44px', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#334155', flexShrink: 0 }}>
+                          {imgUrl ? (
+                            <img src={imgUrl} alt={item.product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
+                              <Utensils size={18} />
+                            </div>
+                          )}
+                        </div>
 
-                    {/* Stepper */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <button onClick={() => handleUpdateCartQuantity(item.product.id, -1)} style={{ width: '26px', height: '26px', border: '1px solid #cbd5e1', background: '#ffffff', borderRadius: '6px', cursor: 'pointer' }}>
-                        -
-                      </button>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 800 }}>{item.quantity}</span>
-                      <button onClick={() => handleUpdateCartQuantity(item.product.id, 1)} style={{ width: '26px', height: '26px', border: '1px solid #cbd5e1', background: '#ffffff', borderRadius: '6px', cursor: 'pointer' }}>
-                        +
-                      </button>
-                      <button onClick={() => handleRemoveCartItem(item.product.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', marginLeft: '0.3rem' }}>
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-                ))
+                        <div style={{ flex: 1 }}>
+                          <h4 style={{ margin: '0 0 2px', fontSize: '0.85rem', fontWeight: 600, color: '#ffffff' }}>
+                            {item.product.name}
+                          </h4>
+                          <span style={{ fontSize: '0.78rem', color: '#f59e0b', fontWeight: 700 }}>
+                            ₹{Number(item.product.price).toFixed(2)} x {item.quantity}
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#0f172a', borderRadius: '6px' }}>
+                          <button
+                            onClick={() => handleUpdateCartQty(item.product.id, item.quantity - 1)}
+                            style={{ background: 'none', border: 'none', color: '#ffffff', padding: '4px 8px', cursor: 'pointer' }}
+                          >
+                            <Minus size={12} />
+                          </button>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#ffffff' }}>{item.quantity}</span>
+                          <button
+                            onClick={() => handleUpdateCartQty(item.product.id, item.quantity + 1)}
+                            style={{ background: 'none', border: 'none', color: '#ffffff', padding: '4px 8px', cursor: 'pointer' }}
+                          >
+                            <Plus size={12} />
+                          </button>
+                        </div>
+
+                        <button
+                          onClick={() => handleRemoveCartItem(item.product.id)}
+                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
 
-            {/* Footer Summary & Checkout */}
             {cart.length > 0 && (
-              <div style={{ padding: '1.25rem 1.5rem', borderTop: '1px solid #e2e8f0', background: '#ffffff' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.85rem', color: '#64748b' }}>
-                  <span>Subtotal</span>
-                  <span>₹{cartSubtotal}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.85rem', fontSize: '1.1rem', fontWeight: 900, color: '#1e293b' }}>
-                  <span>Total Amount</span>
-                  <span style={{ color: '#ea580c' }}>₹{cartSubtotal}</span>
-                </div>
-
-                <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '8px', padding: '0.65rem 0.85rem', fontSize: '0.75rem', color: '#c2410c', fontWeight: 700, marginBottom: '1rem' }}>
-                  💳 Payment is completed at the physical canteen counter via Cash or Counter QR.
-                </div>
-
-                <button
-                  onClick={() => setIsCheckoutOpen(true)}
-                  className="btn btn-primary"
-                  style={{ width: '100%', padding: '0.8rem', fontWeight: 900, fontSize: '0.92rem' }}
+              <div style={{ marginTop: '20px' }}>
+                <div
+                  style={{
+                    backgroundColor: '#0f172a',
+                    padding: '12px',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: '16px',
+                  }}
                 >
-                  PROCEED TO CHECKOUT <ArrowRight size={16} />
-                </button>
+                  <span style={{ fontSize: '0.88rem', color: '#cbd5e1' }}>Total Amount:</span>
+                  <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#f59e0b' }}>₹{cartSubtotal.toFixed(2)}</span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={() => setIsCartOpen(false)}
+                    style={{
+                      flex: 1,
+                      height: '46px',
+                      backgroundColor: 'transparent',
+                      color: '#cbd5e1',
+                      border: '1px solid #334155',
+                      borderRadius: '10px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsCartOpen(false);
+                      setIsCheckoutOpen(true);
+                    }}
+                    style={{
+                      flex: 2,
+                      height: '46px',
+                      backgroundColor: '#f59e0b',
+                      color: '#020617',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontWeight: 800,
+                      fontSize: '0.88rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    PROCEED TO CHECKOUT
+                  </button>
+                </div>
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* ======================= CHECKOUT MODAL ======================= */}
+      {/* CHECKOUT MODAL (Matching Flutter CheckoutModal) */}
       {isCheckoutOpen && (
-        <div className="modal-overlay" onClick={() => setIsCheckoutOpen(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px', padding: '1.75rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: '#1e293b' }}>
-                Checkout & Order Confirmation
-              </h3>
-              <button onClick={() => setIsCheckoutOpen(false)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}>
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.8)',
+            zIndex: 1050,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#1e293b',
+              borderRadius: '16px',
+              width: '100%',
+              maxWidth: '440px',
+              padding: '20px',
+              border: '1px solid #334155',
+              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#ffffff' }}>Order Checkout</h3>
+              <button
+                onClick={() => setIsCheckoutOpen(false)}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+              >
                 <X size={20} />
               </button>
             </div>
+            <div style={{ height: '1px', backgroundColor: '#334155', marginBottom: '16px' }} />
 
-            {orderError && (
-              <div style={{ padding: '0.75rem', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#dc2626', fontSize: '0.8rem', fontWeight: 700, marginBottom: '1rem' }}>
-                {orderError}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#cbd5e1', display: 'block', marginBottom: '6px' }}>
+                  Preferred Pickup Time Slot
+                </label>
+                <select
+                  value={pickupSlot}
+                  onChange={(e) => setPickupSlot(e.target.value)}
+                  style={{
+                    width: '100%',
+                    height: '42px',
+                    backgroundColor: '#0f172a',
+                    border: '1px solid #334155',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                    fontSize: '0.85rem',
+                    padding: '0 10px',
+                    outline: 'none',
+                  }}
+                >
+                  <option value="ASAP (Next 10-15 Mins)">ASAP (Next 10-15 Mins)</option>
+                  <option value="10:30 AM Break">10:30 AM Break</option>
+                  <option value="12:30 PM Lunch Break">12:30 PM Lunch Break</option>
+                  <option value="02:15 PM Break">02:15 PM Break</option>
+                  <option value="03:15 PM Evening">03:15 PM Evening</option>
+                </select>
               </div>
-            )}
 
-            {/* Order Items Summary */}
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.85rem 1rem', marginBottom: '1.25rem', maxHeight: '160px', overflowY: 'auto' }}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Selected Items</div>
-              {cart.map((item) => (
-                <div key={item.product.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '0.35rem' }}>
-                  <span>{item.quantity}x {item.product.name}</span>
-                  <span style={{ fontWeight: 800 }}>₹{Number(item.product.price) * item.quantity}</span>
+              <div>
+                <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#cbd5e1', display: 'block', marginBottom: '8px' }}>
+                  Payment Mode (Pay at Counter)
+                </label>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('CASH')}
+                    style={{
+                      flex: 1,
+                      padding: '12px 8px',
+                      borderRadius: '8px',
+                      border: `1.5px solid ${paymentMethod === 'CASH' ? '#f59e0b' : '#334155'}`,
+                      backgroundColor: paymentMethod === 'CASH' ? 'rgba(245, 158, 11, 0.15)' : '#0f172a',
+                      color: paymentMethod === 'CASH' ? '#f59e0b' : '#cbd5e1',
+                      fontWeight: 600,
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <span>Cash at Counter</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('QR_COUNTER')}
+                    style={{
+                      flex: 1,
+                      padding: '12px 8px',
+                      borderRadius: '8px',
+                      border: `1.5px solid ${paymentMethod === 'QR_COUNTER' ? '#f59e0b' : '#334155'}`,
+                      backgroundColor: paymentMethod === 'QR_COUNTER' ? 'rgba(245, 158, 11, 0.15)' : '#0f172a',
+                      color: paymentMethod === 'QR_COUNTER' ? '#f59e0b' : '#cbd5e1',
+                      fontWeight: 600,
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <span>QR at Counter</span>
+                  </button>
                 </div>
-              ))}
-            </div>
-
-            {/* Payment Method Selection */}
-            <div style={{ marginBottom: '1.25rem' }}>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: '#1e293b', marginBottom: '0.5rem' }}>
-                Select Counter Payment Mode *
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('CASH')}
-                  style={{
-                    padding: '0.75rem',
-                    borderRadius: '10px',
-                    border: paymentMethod === 'CASH' ? '2px solid #ea580c' : '1px solid #cbd5e1',
-                    background: paymentMethod === 'CASH' ? '#fff7ed' : '#ffffff',
-                    color: '#1e293b',
-                    fontWeight: 800,
-                    fontSize: '0.82rem',
-                    cursor: 'pointer'
-                  }}
-                >
-                  💵 Cash at Counter
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('QR_COUNTER')}
-                  style={{
-                    padding: '0.75rem',
-                    borderRadius: '10px',
-                    border: paymentMethod === 'QR_COUNTER' ? '2px solid #ea580c' : '1px solid #cbd5e1',
-                    background: paymentMethod === 'QR_COUNTER' ? '#fff7ed' : '#ffffff',
-                    color: '#1e293b',
-                    fontWeight: 800,
-                    fontSize: '0.82rem',
-                    cursor: 'pointer'
-                  }}
-                >
-                  📱 QR at Counter
-                </button>
               </div>
-            </div>
 
-            {/* Total Amount & Notice */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.85rem 1rem', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '12px', marginBottom: '1.25rem' }}>
-              <span style={{ fontWeight: 800, color: '#1e293b' }}>Total Payable at Counter:</span>
-              <span style={{ fontSize: '1.3rem', fontWeight: 900, color: '#ea580c' }}>₹{cartSubtotal}</span>
-            </div>
+              <div>
+                <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#cbd5e1', display: 'block', marginBottom: '6px' }}>
+                  Order Notes / Cooking Instructions
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g., Less spicy, no onions..."
+                  value={orderNotes}
+                  onChange={(e) => setOrderNotes(e.target.value)}
+                  style={{
+                    width: '100%',
+                    height: '42px',
+                    backgroundColor: '#0f172a',
+                    border: '1px solid #334155',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                    fontSize: '0.85rem',
+                    padding: '0 10px',
+                    outline: 'none',
+                  }}
+                />
+              </div>
 
-            <button
-              onClick={handlePlaceOrder}
-              disabled={isSubmittingOrder}
-              className="btn btn-primary"
-              style={{ width: '100%', padding: '0.85rem', fontWeight: 900, fontSize: '0.95rem' }}
-            >
-              {isSubmittingOrder ? 'Placing Order...' : 'CONFIRM & PLACE ORDER'}
-            </button>
+              <div
+                style={{
+                  backgroundColor: '#0f172a',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <span style={{ fontSize: '0.88rem', color: '#cbd5e1' }}>Total Payable:</span>
+                <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#f59e0b' }}>₹{cartSubtotal.toFixed(2)}</span>
+              </div>
+
+              <button
+                onClick={handleConfirmOrder}
+                disabled={isSubmittingOrder}
+                style={{
+                  width: '100%',
+                  height: '48px',
+                  backgroundColor: '#f59e0b',
+                  color: '#020617',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontSize: '0.9rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                }}
+              >
+                {isSubmittingOrder ? <RefreshCw size={18} className="animate-spin" /> : 'CONFIRM & PLACE ORDER'}
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* ======================= ORDER PLACED SUCCESS MODAL ======================= */}
+      {/* PLACED ORDER SUCCESS MODAL (Matching Flutter PlacedOrderModal) */}
       {placedOrder && (
-        <div className="modal-overlay" onClick={() => setPlacedOrder(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '440px', padding: '2rem', textAlign: 'center' }}>
-            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#ecfdf5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem auto' }}>
-              <Check size={36} />
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.85)',
+            zIndex: 1100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#1e293b',
+              borderRadius: '16px',
+              width: '100%',
+              maxWidth: '400px',
+              padding: '24px',
+              textAlign: 'center',
+              border: '1px solid #334155',
+            }}
+          >
+            <div
+              style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                color: '#4ade80',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 16px',
+              }}
+            >
+              <CheckCircle size={40} />
             </div>
 
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#1e293b', margin: 0 }}>
-              ORDER PLACED!
-            </h2>
-            <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#ea580c', margin: '0.35rem 0 1rem 0' }}>
-              #{placedOrder.order_number}
+            <h3 style={{ margin: '0 0 6px', fontSize: '1.25rem', fontWeight: 800, color: '#ffffff' }}>
+              Order Placed Successfully!
+            </h3>
+            <p style={{ margin: '0 0 8px', fontSize: '0.83rem', color: '#94a3b8' }}>
+              Your order code is
+            </p>
+
+            <div
+              style={{
+                display: 'inline-block',
+                backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                border: '1px solid rgba(245, 158, 11, 0.4)',
+                color: '#f59e0b',
+                padding: '6px 16px',
+                borderRadius: '8px',
+                fontSize: '1.35rem',
+                fontWeight: 800,
+                letterSpacing: '1px',
+                marginBottom: '16px',
+              }}
+            >
+              {placedOrder.order_code}
             </div>
 
-            <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '12px', padding: '1rem', fontSize: '0.82rem', color: '#c2410c', fontWeight: 700, marginBottom: '1.25rem', textAlign: 'left', lineHeight: 1.4 }}>
-              💳 Please complete payment of <strong>₹{placedOrder.total_amount}</strong> at the physical canteen counter. Your order will enter kitchen prep once verified by Admin.
+            {placedOrder.queue_number && (
+              <div style={{ fontSize: '0.9rem', color: '#cbd5e1', marginBottom: '14px' }}>
+                Queue Position: <strong style={{ color: '#ffffff' }}>#{placedOrder.queue_number}</strong>
+              </div>
+            )}
+
+            <div
+              style={{
+                backgroundColor: '#0f172a',
+                borderRadius: '10px',
+                padding: '12px',
+                fontSize: '0.82rem',
+                textAlign: 'left',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px',
+                marginBottom: '20px',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#94a3b8' }}>Payment:</span>
+                <strong style={{ color: placedOrder.payment_status === 'COMPLETED' ? '#4ade80' : '#fb923c' }}>
+                  {placedOrder.payment_status === 'COMPLETED' ? '✓ PAID' : 'Pending at Counter'}
+                </strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#94a3b8' }}>Method:</span>
+                <span style={{ color: '#ffffff' }}>{placedOrder.payment_method === 'CASH' ? 'Cash at Counter' : 'QR Scanner at Counter'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#94a3b8' }}>Total Amount:</span>
+                <strong style={{ color: '#f59e0b' }}>₹{Number(placedOrder.total_amount).toFixed(2)}</strong>
+              </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', gap: '10px' }}>
               <button
-                onClick={() => {
-                  setReceiptOrder(placedOrder);
-                  setPlacedOrder(null);
+                onClick={() => setPlacedOrder(null)}
+                style={{
+                  flex: 1,
+                  height: '44px',
+                  backgroundColor: 'transparent',
+                  color: '#cbd5e1',
+                  border: '1px solid #334155',
+                  borderRadius: '8px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
                 }}
-                className="btn btn-secondary"
-                style={{ flex: 1, padding: '0.65rem' }}
               >
-                <Printer size={16} /> Bill
+                Close
               </button>
               <button
                 onClick={() => {
                   setPlacedOrder(null);
                   setActiveTab('orders');
                 }}
-                className="btn btn-primary"
-                style={{ flex: 1, padding: '0.65rem', fontWeight: 800 }}
+                style={{
+                  flex: 1,
+                  height: '44px',
+                  backgroundColor: '#f59e0b',
+                  color: '#020617',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                }}
               >
-                Track Status
+                TRACK ORDER
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Thermal Receipt Component Modal */}
-      {receiptOrder && (
-        <ThermalReceipt order={receiptOrder} onClose={() => setReceiptOrder(null)} />
+      {/* RECEIPT MODAL OVERLAY (Matching Flutter ReceiptModal) */}
+      {viewingReceiptOrder && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.85)',
+            zIndex: 1150,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+        >
+          <ThermalReceipt
+            order={viewingReceiptOrder}
+            onClose={() => setViewingReceiptOrder(null)}
+          />
+        </div>
       )}
 
-      {/* Mobile Sticky Bottom Navigation with 90%+ Mobile Coverage */}
-      <div className="mobile-bottom-nav">
-        <button className={`mobile-nav-btn ${activeTab === 'menu' ? 'active' : ''}`} onClick={() => setActiveTab('menu')}>
-          <Utensils size={20} /> Menu
-        </button>
-        <button className={`mobile-nav-btn ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>
-          <ShoppingBag size={20} /> Orders
-          {orders.filter((o) => o.status !== 'DELIVERED' && o.status !== 'CANCELLED').length > 0 && (
-            <span className="mobile-nav-badge">
-              {orders.filter((o) => o.status !== 'DELIVERED' && o.status !== 'CANCELLED').length}
-            </span>
-          )}
-        </button>
-        <button className="mobile-nav-btn" onClick={() => setIsCartOpen(true)}>
-          <ShoppingCart size={20} /> Cart
-          {cartTotalCount > 0 && (
-            <span className="mobile-nav-badge">{cartTotalCount}</span>
-          )}
-        </button>
-        <button className={`mobile-nav-btn ${activeTab === 'support' ? 'active' : ''}`} onClick={() => setActiveTab('support')}>
-          <HelpCircle size={20} /> Help
-        </button>
-        <button className={`mobile-nav-btn ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
-          <UserIcon size={20} /> Profile
-        </button>
-      </div>
+      {/* LOGOUT CONFIRMATION DIALOG (Matching Flutter ProfileTab _showLogoutConfirmation) */}
+      {showLogoutConfirm && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.8)',
+            zIndex: 1200,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#1e293b',
+              borderRadius: '14px',
+              maxWidth: '360px',
+              width: '100%',
+              padding: '20px',
+              border: '1px solid #334155',
+            }}
+          >
+            <h3 style={{ margin: '0 0 8px', fontSize: '1.1rem', fontWeight: 800, color: '#ffffff' }}>
+              Logout Confirmation
+            </h3>
+            <p style={{ margin: '0 0 20px', fontSize: '0.85rem', color: '#cbd5e1' }}>
+              Are you sure you want to log out of SAEC CAFÉ?
+            </p>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                style={{
+                  flex: 1,
+                  height: '42px',
+                  backgroundColor: 'transparent',
+                  color: '#94a3b8',
+                  border: 'none',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowLogoutConfirm(false);
+                  onLogout();
+                }}
+                style={{
+                  flex: 1,
+                  height: '42px',
+                  backgroundColor: '#ef4444',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
